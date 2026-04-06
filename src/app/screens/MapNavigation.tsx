@@ -13,7 +13,7 @@ import { Button } from '../components/ui/button';
 
 export function MapNavigation() {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { orderId: id } = useParams();
   const [showActions, setShowActions] = useState(true);
 
   return (

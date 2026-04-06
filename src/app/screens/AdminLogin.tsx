@@ -15,40 +15,40 @@ export function AdminLogin() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Mock login - in real app would verify credentials
     if (email && password) {
       localStorage.setItem('adminRole', 'admin');
       localStorage.setItem('adminEmail', email);
-      toast.success('Welcome back, Admin!');
+      toast.success('Hoş geldiniz, Yönetici!');
       navigate('/admin/dashboard');
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-[#FFD600] to-[#FFC107] flex items-center justify-center p-6">
+    <div className="fixed inset-0 bg-gradient-to-br from-[#121212] via-[#2a2a2a] to-[#121212] flex items-center justify-center p-6">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-[#121212] rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Shield className="w-10 h-10 text-[#FFD600]" />
+          <div className="w-20 h-20 bg-gradient-to-br from-[#FFD600] to-[#FFC107] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
+            <Shield className="w-10 h-10 text-[#121212]" />
           </div>
-          <h1 className="text-3xl font-bold text-[#121212] mb-2">Admin Login</h1>
-          <p className="text-gray-600">Full system access and management</p>
+          <h1 className="text-4xl font-bold text-[#121212] mb-2">Baymoto</h1>
+          <h2 className="text-xl font-bold text-gray-700 mb-1">Yönetici Girişi</h2>
+          <p className="text-gray-600">Tam sistem erişimi ve yönetim</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
             <Label htmlFor="email" className="flex items-center gap-2 mb-2">
               <Mail className="w-4 h-4" />
-              Email Address
+              E-posta Adresi
             </Label>
             <Input
               id="email"
               type="email"
-              placeholder="admin@example.com"
+              placeholder="admin@baymoto.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="h-12"
@@ -59,12 +59,12 @@ export function AdminLogin() {
           <div>
             <Label htmlFor="password" className="flex items-center gap-2 mb-2">
               <Lock className="w-4 h-4" />
-              Password
+              Şifre
             </Label>
             <Input
               id="password"
               type="password"
-              placeholder="Enter your password"
+              placeholder="Şifrenizi girin"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="h-12"
@@ -74,19 +74,25 @@ export function AdminLogin() {
 
           <Button
             type="submit"
-            className="w-full h-12 bg-[#121212] hover:bg-[#121212]/90 text-[#FFD600] font-semibold rounded-xl"
+            className="w-full h-12 bg-gradient-to-r from-[#FFD600] to-[#FFC107] hover:from-[#FFC107] hover:to-[#FFD600] text-[#121212] font-bold rounded-xl shadow-lg"
           >
-            Login as Admin
+            Yönetici Olarak Giriş Yap
           </Button>
         </form>
 
         <div className="mt-6 text-center">
           <button
             onClick={() => navigate('/admin-selector')}
-            className="text-gray-500 hover:text-[#121212] text-sm transition-colors"
+            className="text-gray-500 hover:text-[#121212] text-sm transition-colors font-semibold"
           >
-            ← Back to role selection
+            ← Rol seçimine geri dön
           </button>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+          <p className="text-xs text-gray-500">
+            Demo Giriş: admin@admin.com / admin123
+          </p>
         </div>
       </motion.div>
     </div>

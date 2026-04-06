@@ -124,7 +124,7 @@ export function OrderHistory() {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-lg font-bold text-[#121212]">Order History</h1>
+          <h1 className="text-lg font-bold text-[#121212]">Sipariş Geçmişi</h1>
           <Button variant="ghost" size="icon" className="w-10 h-10 rounded-full">
             <Filter className="w-5 h-5" />
           </Button>
@@ -166,7 +166,7 @@ export function OrderHistory() {
                 filter === 'all' ? 'text-[#121212]/70' : 'text-gray-500'
               }`}
             >
-              Total
+              Toplam
             </p>
           </motion.button>
 
@@ -191,7 +191,7 @@ export function OrderHistory() {
                 filter === 'completed' ? 'text-green-600' : 'text-gray-500'
               }`}
             >
-              Completed
+              Tamamlandı
             </p>
           </motion.button>
 
@@ -216,7 +216,7 @@ export function OrderHistory() {
                 filter === 'cancelled' ? 'text-red-600' : 'text-gray-500'
               }`}
             >
-              Cancelled
+              İptal Edildi
             </p>
           </motion.button>
         </div>
@@ -242,7 +242,7 @@ export function OrderHistory() {
                     <XCircle className="w-4 h-4 text-red-600" />
                   )}
                 </div>
-                <p className="text-xs text-gray-500">Order #{order.id}</p>
+                <p className="text-xs text-gray-500">Sipariş #{order.id}</p>
               </div>
 
               {order.status === 'completed' ? (
@@ -254,7 +254,7 @@ export function OrderHistory() {
                 </div>
               ) : (
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-red-600">Cancelled</p>
+                  <p className="text-sm font-semibold text-red-600">İptal Edildi</p>
                   <p className="text-xs text-gray-500">{order.distance}</p>
                 </div>
               )}

@@ -8,7 +8,6 @@ export function Splash() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Check if user has seen onboarding (in real app, check localStorage)
       const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
       if (hasSeenOnboarding) {
         navigate('/dashboard');
@@ -47,9 +46,9 @@ export function Splash() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
-          className="text-4xl font-bold text-[#FFD600] mb-2"
+          className="text-5xl font-bold text-[#FFD600] mb-2"
         >
-          FlashCourier
+          Baymoto
         </motion.h1>
 
         <motion.p
@@ -58,7 +57,7 @@ export function Splash() {
           transition={{ delay: 0.5, duration: 0.5 }}
           className="text-white/60 text-sm"
         >
-          Deliver. Earn. Repeat.
+          Hızlı. Güvenilir. Profesyonel.
         </motion.p>
 
         <motion.div

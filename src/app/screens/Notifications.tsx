@@ -9,6 +9,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import { useAppTheme } from '../utils/useAppTheme';
 
 type NotificationType = 'order' | 'promo' | 'system' | 'earnings';
 
@@ -23,54 +24,72 @@ interface Notification {
 
 export function Notifications() {
   const navigate = useNavigate();
+  const theme = useAppTheme();
+
+  // Admin bildirimlerini al
+  const adminNotifications = JSON.parse(localStorage.getItem('globalNotifications') || '[]');
 
   const notifications: Notification[] = [
+    // Admin bildirimleri ekle
+    ...adminNotifications.map((notif: any) => ({
+      id: notif.id.toString(),
+      type: 'system' as NotificationType,
+      title: notif.title,
+      message: notif.message,
+      time: new Date(notif.date).toLocaleDateString('tr-TR', { 
+        day: 'numeric', 
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      isRead: false,
+    })),
     {
       id: '1',
       type: 'order',
-      title: 'New Order Available',
-      message: 'A new delivery order is waiting for you nearby',
-      time: '2 min ago',
+      title: 'Yeni Sipariş Mevcut',
+      message: 'Yakınınızda yeni bir teslimat siparişi sizi bekliyor',
+      time: '2 dakika önce',
       isRead: false,
     },
     {
       id: '2',
       type: 'promo',
-      title: '🎉 Weekend Bonus Active!',
-      message: 'Earn 1.5x on all deliveries this weekend. Start delivering now!',
-      time: '1 hour ago',
+      title: 'Hafta Sonu Bonusu Aktif!',
+      message: 'Bu hafta sonu tüm teslimatlardan 1.5x kazanın. Hemen teslimat yapmaya başlayın!',
+      time: '1 saat önce',
       isRead: false,
     },
     {
       id: '3',
       type: 'earnings',
-      title: 'Daily Target Achieved',
-      message: "Congratulations! You've reached your daily earnings goal of $150",
-      time: '3 hours ago',
+      title: 'Günlük Hedef Başarıldı',
+      message: 'Tebrikler! Günlük kazanç hedefiniz olan ₺450\'ye ulaştınız',
+      time: '3 saat önce',
       isRead: false,
     },
     {
       id: '4',
       type: 'system',
-      title: 'App Update Available',
-      message: 'New features and improvements are ready to install',
-      time: '5 hours ago',
+      title: 'Uygulama Güncellemesi Mevcut',
+      message: 'Yeni özellikler ve iyileştirmeler yüklemeye hazır',
+      time: '5 saat önce',
       isRead: true,
     },
     {
       id: '5',
       type: 'promo',
-      title: 'Peak Hours Alert',
-      message: 'High demand expected between 6-9 PM. Maximize your earnings!',
-      time: 'Yesterday',
+      title: 'Yoğun Saat Uyarısı',
+      message: '18:00-21:00 arası yüksek talep bekleniyor. Kazancınızı maksimize edin!',
+      time: 'Dün',
       isRead: true,
     },
     {
       id: '6',
       type: 'earnings',
-      title: 'Weekly Payout Processed',
-      message: '$1,260.00 has been deposited to your account',
-      time: '2 days ago',
+      title: 'Haftalık Ödeme İşlendi',
+      message: '₺3,780.00 hesabınıza yatırıldı',
+      time: '2 gün önce',
       isRead: true,
     },
   ];

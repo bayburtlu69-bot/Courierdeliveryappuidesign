@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { motion } from 'motion/react';
-import { X, Send, Paperclip, Image as ImageIcon } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Send, Paperclip, Image as ImageIcon, User, Headphones } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
@@ -11,10 +10,10 @@ interface LiveSupportChatProps {
     issue: string;
     severity: string;
   };
-  onClose: () => void;
+  onClose?: () => void;
 }
 
-export function LiveSupportChat({ ticket, onClose }: LiveSupportChatProps) {
+export function LiveSupportChat({ ticket }: LiveSupportChatProps) {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -30,6 +29,11 @@ export function LiveSupportChat({ ticket, onClose }: LiveSupportChatProps) {
     },
   ]);
   const [newMessage, setNewMessage] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSend = () => {
     if (newMessage.trim()) {
@@ -43,97 +47,99 @@ export function LiveSupportChat({ ticket, onClose }: LiveSupportChatProps) {
         },
       ]);
       setNewMessage('');
+
+      // Simulate courier auto-reply
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: prev.length + 1,
+            sender: 'courier',
+            text: 'Teşekkürler, anlıyorum.',
+            time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+      }, 2000);
     }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6"
-    >
-      <motion.div
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
-        className="bg-white rounded-2xl w-full max-w-2xl h-[600px] flex flex-col shadow-2xl"
-      >
-        {/* Header */}
-        <div className="bg-blue-600 text-white p-4 rounded-t-2xl flex items-center justify-between">
-          <div>
-            <h3 className="font-bold text-lg">{ticket.courierName}</h3>
-            <p className="text-sm text-blue-100">Canlı Destek</p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="text-white hover:bg-white/20"
+    <div className="flex flex-col h-full bg-gray-50">
+      {/* Issue Banner */}
+      <div className="bg-orange-50 border-b border-orange-200 px-4 py-2 flex-shrink-0">
+        <p className="text-sm text-orange-800">
+          <strong>Konu:</strong> {ticket.issue}
+        </p>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`flex items-end gap-2 ${message.sender === 'support' ? 'flex-row-reverse' : 'flex-row'}`}
           >
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
-
-        {/* Issue Banner */}
-        <div className="bg-orange-50 border-b border-orange-200 p-3">
-          <p className="text-sm text-orange-800">
-            <strong>Konu:</strong> {ticket.issue}
-          </p>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-          {messages.map((message) => (
+            {/* Avatar */}
             <div
-              key={message.id}
-              className={`flex ${message.sender === 'support' ? 'justify-end' : 'justify-start'}`}
+              className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${
+                message.sender === 'support'
+                  ? 'bg-[#FFD600]'
+                  : 'bg-gray-300'
+              }`}
             >
-              <div
-                className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                  message.sender === 'support'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-[#121212] shadow-sm'
+              {message.sender === 'support' ? (
+                <Headphones className="w-4 h-4 text-[#121212]" />
+              ) : (
+                <User className="w-4 h-4 text-gray-600" />
+              )}
+            </div>
+
+            <div
+              className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                message.sender === 'support'
+                  ? 'bg-[#121212] text-white rounded-br-sm'
+                  : 'bg-white text-[#121212] shadow-sm rounded-bl-sm'
+              }`}
+            >
+              <p className="text-sm leading-relaxed">{message.text}</p>
+              <p
+                className={`text-xs mt-1 ${
+                  message.sender === 'support' ? 'text-white/60' : 'text-gray-400'
                 }`}
               >
-                <p className="text-sm">{message.text}</p>
-                <p
-                  className={`text-xs mt-1 ${
-                    message.sender === 'support' ? 'text-blue-100' : 'text-gray-500'
-                  }`}
-                >
-                  {message.time}
-                </p>
-              </div>
+                {message.time}
+              </p>
             </div>
-          ))}
-        </div>
-
-        {/* Input */}
-        <div className="p-4 border-t border-gray-200 bg-white rounded-b-2xl">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="text-gray-500">
-              <Paperclip className="w-5 h-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-gray-500">
-              <ImageIcon className="w-5 h-5" />
-            </Button>
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Mesajınızı yazın..."
-              className="flex-1 rounded-xl"
-            />
-            <Button
-              onClick={handleSend}
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
-            >
-              <Send className="w-5 h-5" />
-            </Button>
           </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="p-4 border-t border-gray-200 bg-white flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
+            <Paperclip className="w-5 h-5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
+            <ImageIcon className="w-5 h-5" />
+          </Button>
+          <Input
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="Mesajınızı yazın..."
+            className="flex-1 rounded-xl border-2 border-gray-200 focus:border-[#FFD600]"
+          />
+          <Button
+            onClick={handleSend}
+            disabled={!newMessage.trim()}
+            className="bg-[#FFD600] hover:bg-[#FFD600]/90 text-[#121212] rounded-xl font-bold px-4"
+          >
+            <Send className="w-5 h-5" />
+          </Button>
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }

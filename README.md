@@ -1,185 +1,198 @@
-# Kurye Teslimat Uygulaması - Tam Ekosistem
+# 🏍️ Baymoto - Profesyonel Kurye Teslimat Sistemi
 
-## 🚀 Genel Bakış
-Sarı (#FFD600) ve siyah (#121212) temalı profesyonel mobil kurye teslimat uygulaması ve kapsamlı admin panel sistemi. React, TypeScript, Tailwind CSS ve Framer Motion ile geliştirilmiştir.
+## 📌 Proje Hakkında
 
-## 📱 Özellikler
+**Baymoto**, profesyonel bir kurye teslimat platformudur. Sarı (#FFD600) ve siyah (#121212) tema renkleri ile tasarlanan sistem, mobil kurye uygulaması ve web tabanlı yönetim panellerini içerir.
 
-### Kurye Uygulaması (Mobil - Türkçe)
-- **11 Eksiksiz Ekran:**
-  - Karşılama ve tanıtım ekranları
-  - Giriş ve SMS doğrulama
-  - Çevrimiçi/çevrimdışı durumu ile dashboard (modern, küçük buton tasarımı)
-  - Geri sayım sayacı ile gelen sipariş bildirimleri
-  - Adım adım aktif sipariş takibi
-  - **Gömülü harita navigasyonu** (Mock harita - harici uygulama gerektirmez)
-  - **Ödeme yöntemi gösterimi** (Kapıda Ödeme, Kart, Online)
-  - Grafiklerle kazanç dashboard'u
-  - Sipariş geçmişi
-  - Bildirim merkezi
-  - Profil ve ayarlar
-  - Chat UI ile destek
+## ✨ Özellikler
 
-- **Kurye Başvuru Sistemi:**
-  - Çok adımlı başvuru formu
-  - Kişisel bilgiler, araç detayları, belgeler
-  - Ehliyet, ruhsat vb. için görsel yükleme
-  - Konum tercihi seçimi
+### 🎯 Kurye Mobil Uygulaması
+- ✅ **Splash & Onboarding** - Tamamen Türkçe tanıtım ekranları
+- ✅ **Giriş & OTP Doğrulama** - Güvenli kimlik doğrulama
+- ✅ **Motorlu Animasyonlu Dashboard** - Hareketli çevrimiçi/çevrimdışı göstergesi
+- ✅ **Otomatik Sipariş Kabul** - Profil ayarlarından aktifleştir
+- ✅ **Ses ile Bildirim** - Sipariş geldiğinde çan sesi
+- ✅ **Gelen Sipariş Bildirimleri** - Gerçek zamanlı popup'lar
+- ✅ **Aktif Sipariş Takibi** - Basılı tut mekanizması ile
+  - Mağazaya Git
+  - Siparişi Al  
+  - Müşteriye Teslim Et
+  - ✨ Patlama efekti animasyonu
+- ✅ **Tam Ekran Harita Navigasyonu** - Hatasız konum yönlendirme
+- ✅ **Kazanç Dashboard** - Hareketli para animasyonu ile
+- ✅ **Sipariş Geçmişi** - Tüm teslimatlara erişim
+- ✅ **Bildirimler Merkezi** - Tüm aktivite kayıtları
+- ✅ **Profil & Ayarlar** - Otomatik kabul, ses, bildirim ayarları
+- ✅ **Canlı Destek** - 5 soruluk akıllı asistan + canlı bağlantı
 
-### Admin Paneli (Web - Türkçe)
-**3 Katmanlı Giriş Sistemi:**
+### 💼 Yönetici Paneli
+- ✅ **Canlı Takip Sekmesi** - Tüm aktif siparişleri görüntüleme
+- ✅ **Kurye Başvuru Yönetimi** 
+  - Başvuruları onaylama/reddetme
+  - Belgeleri tıklayarak görüntüleme (büyük modal)
+  - Ehliyet, ruhsat, araç ve kimlik görselleri
+- ✅ **Aktif Kuryeler** - Çevrimiçi kurye listesi
+- ✅ **Mağaza Yönetimi** - 10+ kategori desteği
+- ✅ **Test Sipariş Oluşturma** - Otomatik fiyat hesaplama
+- ✅ **Fiyatlandırma Ayarları** - Baz ücret + KM başı ücret
+- ✅ **Detaylı Aktivite Logları** - Tüm işlemler kaydediliyor
 
-#### 1. Admin Dashboard
-- Tam sistem erişimi
-- Kurye başvurularını inceleme ve onaylama/reddetme
-- Tüm yüklenen belgeleri görüntüleme
-- Aktif kuryeler izleme
-- Dükkan ekleme (e-posta, telefon, şifre, kategori)
-- **Test siparişleri oluşturma** (test için)
-- **Kilometre başına ücret ayarı** (fiyatlandırma kontrolü)
-- **Aktivite logları** (tüm işlemlerin kaydı)
-- Gerçek zamanlı kurye takibi
-- Detaylı istatistikler
+### 🏪 Dükkan Sahibi Paneli
+- ✅ **Siyah-Sarı Tema** - Baymoto kurumsal renkleri
+- ✅ **Dashboard** - Ciro ve sipariş istatistikleri
+- ✅ **Grafik Analizleri** - Haftalık/aylık trendler
+- ✅ **Performans Metrikleri** - Gerçek zamanlı KPI'lar
 
-#### 2. Dükkan Sahibi Dashboard
-- Aylık analitik ve istatistikler
-- Sipariş sayısı ve ciro takibi
-- Haftalık dağılım grafikleri
-- Performans metrikleri
-- Başarı oranı izleme
-- Gelir dökümü
+### 👥 Destek Çalışanı Paneli
+- ✅ **Siyah-Sarı Tema** - Baymoto kurumsal renkleri
+- ✅ **Başvuru İnceleme** - Detaylı belge kontrolü + görsel önizleme
+- ✅ **Akıllı Canlı Destek** 
+  - 5 soruluk ön değerlendirme
+  - Seçeneklere göre yönlendirme
+  - Çalışan ile doğrudan sohbet
+  - "Sohbeti Kapat ve Sil" özelliği
 
-#### 3. Çalışan Dashboard
-- Kurye başvurularını inceleme
-- Başvuruları onaylama/reddetme
-- **Yüklenen belgeleri görüntüleme** (tüm dökümanlar)
-- **Aciliyet bazlı canlı destek sistemi** (Yüksek, Orta, Düşük)
-- **Canlı chat ekranı** (gerçek zamanlı mesajlaşma)
-- Destek talebi yönetimi
-- Ortalama yanıt süresi takibi
+## 💰 Ödeme Sistemi
 
-## 🎨 Tasarım Sistemi
-- **Renkler:** Sarı (#FFD600) & Siyah (#121212)
-- **8px Grid Sistemi**
-- **Köşe yuvarlatma:** 12-16px
-- **Motion animasyonları** her yerde
-- **Tek elle kullanım** optimizasyonu
-- Pil dostu UI
+### Desteklenen Ödeme Yöntemleri
+1. **💵 Kapıda Nakit Ödeme** - Kurye tarafından tahsil
+2. **💳 Kapıda Kart ile Ödeme** - Kart terminali ile
+3. **✅ Online Ödendi** - Ön ödemeli siparişler
 
-## 🗺️ Harita Özellikleri
-- **Gömülü navigasyon** (harici uygulama yok)
-- Gerçek zamanlı rota görselleştirme
-- Restoran ve müşteri işaretleyicileri
-- Mesafe ve zaman tahminleri
-- Animasyonlu mock harita
+### Ödeme Takibi
+- Her ödeme `paymentLogs` ve `activityLogs`'a kaydediliyor
+- Kurye adı, müşteri adı, tutar, zaman damgası
+- Admin panelinden tüm ödemeler izlenebilir
 
-## 💳 Ödeme Yöntemleri
-Kuryeler şunları görebilir:
-- **Kapıda Ödeme** - Müşteriden tahsil edilecek
-- **Kart ile Ödeme** - POS cihazı gerekli
-- **Online Ödendi** - Ödeme alındı işareti
+## 📍 Konum & Adres Sistemi
 
-## 💰 Fiyatlandırma Kontrolü
-- Admin panelden km başına ücret ayarlama
-- Otomatik kazanç hesaplama
-- Gerçek zamanlı fiyat güncellemesi
-- Aktivite loguna kaydedilir
+- ✅ Tam detaylı müşteri adresi (Mahalle, Cadde, Bina No, Daire)
+- ✅ MockMap component ile hatasız navigasyon
+- ✅ Mağaza → Müşteri rotası
+- ✅ Mesafe ve süre tahmini
+- ✅ Telefon araması entegrasyonu
 
-## 📊 Aktivite & Kontrol
-Admin panelde:
-- Tüm işlemlerin logları
-- Kullanıcı bazlı aktivite takibi
-- Zaman damgalı kayıtlar
-- Başvuru, onay, red, dükkan ekleme, fiyat değişiklikleri
-- 100 son işlem saklanır
+## 🎨 Tasarım & UX
 
-## 🔗 Rotalar
+### Renk Paleti
+- **Ana Sarı**: #FFD600 (Butonlar, vurgular)
+- **Siyah**: #121212 (Header, temel elementler)
+- **Baymoto Kimliği**: Profesyonel ve enerjik
+
+### Kullanıcı Deneyimi
+- 📱 Mobil öncelikli responsive tasarım
+- 👍 Tek elle kullanım optimizasyonu
+- 🔘 Büyük, kolay tıklanabilir butonlar
+- 🎭 Animasyonlu geçişler (Framer Motion)
+- 💫 Patlama efektleri (Basılı tut onayları)
+- 🏍️ Motorlu animasyonlar
+- 💸 Hareketli para görselleri
+
+## 🚀 Kurulum
+
+```bash
+# 1. Bağımlılıkları yükle
+npm install
+
+# 2. Geliştirme sunucusunu başlat
+npm run dev
+
+# 3. Tarayıcıda aç
+http://localhost:5173
+```
+
+## 📱 Kullanım Senaryoları
+
+### Kurye İçin
+1. Uygulamayı aç (Onboarding geç)
+2. Giriş yap
+3. OTP doğrula (1234)
+4. Profil → "Otomatik Sipariş Kabul" aç (opsiyonel)
+5. Dashboard'da "Çevrimiçi" ol (motorlu animasyon)
+6. Sipariş gelince çan sesi duyulur
+7. Otomatik kabul açıksa sipariş direkt atanır
+8. **Basılı tut** ile adım adım ilerle
+9. Ödeme tahsil et
+10. Teslimat sonrası çevrimiçi kal
+
+### Yönetici İçin
+1. `/admin-selector` → "Yönetici Girişi"
+2. Giriş yap (admin@admin.com / admin123)
+3. Başvuruları incele
+4. Belgeleri tıklayarak büyüt
+5. Onay/red işlemleri
+6. Test siparişi oluştur
+7. Activity log'ları kontrol et
+
+### Dükkan Sahibi İçin
+1. `/admin-selector` → "Dükkan Sahibi"
+2. Siyah-sarı temalı dashboard'u gör
+3. İstatistikleri ve grafikleri analiz et
+
+### Destek Çalışanı İçin
+1. `/admin-selector` → "Destek Çalışanı"
+2. Başvuruları incele (belgeler tıklanabilir)
+3. Canlı destek taleplerine yanıt ver
+4. İşlem bitince "Sohbeti Kapat ve Sil"
+
+## 🔐 Giriş Bilgileri
+
+### Yönetim Panelleri
+- **Yönetici**: admin@admin.com / admin123
+- **Destek Çalışanı**: employee@admin.com / employee123
 
 ### Kurye Uygulaması
-- `/` - Karşılama ekranı
-- `/onboarding` - Tanıtım slaytları
-- `/login` - Telefon girişi
-- `/otp` - SMS doğrulama
-- `/apply` - Kurye başvuru formu
-- `/dashboard` - Ana sayfa
-- `/order/:id` - Aktif sipariş takibi
-- `/earnings` - Kazanç dashboard'u
-- `/history` - Sipariş geçmişi
-- `/notifications` - Bildirimler
-- `/profile` - Profil ayarları
-- `/support` - Destek
+- Telefon: Herhangi bir numara
+- OTP: `1234`
 
-### Admin Paneli
-- `/admin-selector` - Rol seçimi
-- `/admin/login` - Admin girişi
-- `/shop/login` - Dükkan girişi
-- `/employee/login` - Çalışan girişi
-- `/admin/dashboard` - Admin paneli
-- `/shop/dashboard` - Dükkan paneli
-- `/employee/dashboard` - Çalışan paneli
+## 📊 Teknoloji Stack
 
-## 🧪 Test Etme
-1. `/admin/login` sayfasını açın ve admin olarak giriş yapın
-2. Admin Dashboard'da test siparişi oluşturun
-3. Kurye app'te `/dashboard` sayfasına gidin
-4. Çevrimiçi olun ve test siparişini alın
-5. Siparişi kabul edin ve gömülü haritayı test edin
-6. Teslimat akışını tamamlayın
-7. Çalışan panelinden canlı destek özelliğini test edin
+- **React 18** + **TypeScript**
+- **Tailwind CSS v4**
+- **Framer Motion** - Animasyonlar
+- **React Router** - Navigasyon
+- **Recharts** - Grafikler
+- **Lucide React** - İkonlar
+- **Sonner** - Bildirimler
+- **LocalStorage** - Veri persistance
 
-## 🔒 Mock Veri Depolama
-Demo için localStorage kullanılır:
-- `courierApplications` - Başvuru verileri
-- `activeOrders` - Test siparişler
-- `shops` - Kayıtlı dükkanlar
-- `pricePerKm` - Km başı ücret
-- `activityLogs` - İşlem logları
-- `adminRole` - Mevcut admin rolü
+## 🎯 Yeni Özellikler
 
-## 📦 Ana Bağımlılıklar
-- React Router 7 (Data mode)
-- Framer Motion / Motion
-- Recharts
-- Radix UI components
-- Lucide React icons
-- React Hook Form
-- Sonner (toast notifications)
+### Basılı Tut Mekanizması
+- Eski "kaydır" yerine "basılı tut"
+- %0-100 sarı dolum animasyonu
+- 20 parçacık patlama efekti
+- Her adımda kullanılıyor
 
-## 🌐 Dil
-- **Kurye Uygulaması:** Türkçe
-- **Admin Panelleri:** Türkçe
-- Tüm UI metinleri yerelleştirilmiş
+### Otomatik Sipariş Kabul
+- Profil ayarlarından aktif/pasif
+- localStorage'da saklanıyor
+- Açıksa sipariş direkt atanıyor
 
-## 🎯 Sonraki Adımlar Önerileri
-- Gerçek backend için Supabase bağlantısı
-- WebSocket ile gerçek zamanlı güncellemeler
-- Gerçek SMS OTP servisi entegrasyonu
-- Ödeme gateway entegrasyonu
-- Production deployment
+### Akıllı Canlı Destek
+- 5 soruluk ön değerlendirme
+- Seçeneklere göre yönlendirme
+- Gerekirse çalışan ile bağlantı
+- Sohbet kapatma ve silme
 
-## 💡 Notlar
-Bu bir **frontend prototipi** mock veri ile. Production için:
-- Kimlik doğrulama için backend API gerekli
-- Kalıcı depolama için veritabanı gerekli
-- Güvenli dosya yükleme servisi eklenmeli
-- Rol bazlı erişim kontrolü (RBAC) uygulanmalı
-- Gerçek harita API'si entegre edilmeli (Google Maps / Mapbox)
+### Görsel Belge Sistemi
+- Admin ve çalışan panelinde
+- Tıklayarak büyük önizleme
+- Animasyonlu modal
+- 4 belge tipi desteği
 
-## 🚀 Öne Çıkan Özellikler
-✅ Tamamen Türkçe arayüz  
-✅ Modern, küçük buton tasarımı (Dashboard)  
-✅ Ödeme yöntemi gösterimi  
-✅ Km başı ücret yönetimi  
-✅ Detaylı aktivite logları  
-✅ Canlı chat desteği  
-✅ Belge görüntüleme sistemi  
-✅ Mock harita navigasyonu (hata yok!)  
-✅ Test sipariş sistemi  
-✅ Aciliyet bazlı destek  
+## 🐛 Bilinen Sınırlamalar
 
-## 🛠️ Teknik Detaylar
-- **Harita:** Mock harita component (leaflet hatası çözüldü)
-- **Animasyonlar:** Motion library ile smooth geçişler
-- **State Management:** React hooks & localStorage
-- **Responsive:** Mobil-first yaklaşım
-- **Performance:** Optimize edilmiş render
+- Veriler LocalStorage'da (backend yok)
+- Gerçek harita yerine MockMap
+- Belge görselleri simgesel
+- Tek cihaz kullanımı
+
+## 📄 Lisans
+
+Bu proje Baymoto için özel olarak geliştirilmiştir.
+
+---
+
+**Made with ❤️ by Baymoto Team**
+**🏍️ Hızlı. Güvenilir. Profesyonel.**

@@ -7,20 +7,20 @@ import { Button } from '../components/ui/button';
 const slides = [
   {
     icon: DollarSign,
-    title: 'Earn Money on Your Terms',
-    description: 'Make great money delivering orders in your city. Work when you want, earn what you deserve.',
+    title: 'İstediğin Kadar Kazan',
+    description: 'Şehrinde sipariş teslimatı yaparak güzel paralar kazan. İstediğin zaman çalış, hak ettiğin kadar kazan.',
     color: '#FFD600',
   },
   {
     icon: Clock,
-    title: 'Flexible Schedule',
-    description: 'Choose your own hours. Go online whenever you want and maximize your earnings.',
+    title: 'Esnek Çalışma Saatleri',
+    description: 'Kendi programını kendin belirle. İstediğin zaman çevrimiçi ol ve kazancını maksimuma çıkar.',
     color: '#FFD600',
   },
   {
     icon: Zap,
-    title: 'Fast & Easy Deliveries',
-    description: 'Simple pickup and delivery process. Get paid instantly after each completed order.',
+    title: 'Hızlı & Kolay Teslimat',
+    description: 'Basit alış ve teslimat süreci. Her tamamlanan sipariş sonrası anında öde al.',
     color: '#FFD600',
   },
 ];
@@ -54,7 +54,7 @@ export function Onboarding() {
           onClick={handleSkip}
           className="text-gray-400 hover:text-gray-600"
         >
-          Skip
+          Atla
         </Button>
       </div>
 
@@ -125,11 +125,11 @@ export function Onboarding() {
         >
           {currentSlide < slides.length - 1 ? (
             <>
-              Next
+              Devam
               <ChevronRight className="ml-2 w-5 h-5" />
             </>
           ) : (
-            "Get Started"
+            "Başla"
           )}
         </Button>
       </div>

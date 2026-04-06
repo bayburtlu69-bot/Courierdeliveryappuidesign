@@ -33,7 +33,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
 
-type Tab = 'applications' | 'couriers' | 'shops' | 'testOrders' | 'settings' | 'logs' | 'tracking';
+type Tab = 'tracking' | 'applications' | 'couriers' | 'shops' | 'testOrders' | 'settings' | 'notifications' | 'logs';
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -64,8 +64,9 @@ export function AdminDashboard() {
     setApplications(updated);
     localStorage.setItem('courierApplications', JSON.stringify(updated));
     
-    logActivity('Başvuru Onaylandı', `${app?.fullName} adlı kurye başvurusu onaylandı`, 'success');
-    toast.success('Başvuru onaylandı!');
+    logActivity('Başvuru Onaylandı (Yönetici)', `${app?.fullName} adlı kurye başvurusu yönetici tarafından onaylandı`, 'success');
+    toast.success('Başvuru başarıyla onaylandı!');
+    setViewingApplication(null);
   };
 
   const handleReject = (id: number) => {
@@ -76,8 +77,9 @@ export function AdminDashboard() {
     setApplications(updated);
     localStorage.setItem('courierApplications', JSON.stringify(updated));
     
-    logActivity('Başvuru Reddedildi', `${app?.fullName} adlı kurye başvurusu reddedildi`, 'warning');
+    logActivity('Başvuru Reddedildi (Yönetici)', `${app?.fullName} adlı kurye başvurusu yönetici tarafından reddedildi`, 'warning');
     toast.error('Başvuru reddedildi');
+    setViewingApplication(null);
   };
 
   const logActivity = (action: string, description: string, type: 'info' | 'success' | 'warning' | 'error' = 'info', metadata?: any) => {
@@ -262,6 +264,7 @@ export function AdminDashboard() {
                 basePrice={basePrice}
                 setBasePrice={setBasePrice}
                 onSave={handleSavePricing}
+                logActivity={logActivity}
               />
             )}
             {activeTab === 'logs' && <LogsTab />}
@@ -534,94 +537,173 @@ function ApplicationsTab({ applications, onApprove, onReject }: any) {
 }
 
 function ApplicationDetailsModal({ application, onClose, onApprove, onReject }: any) {
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6"
-      onClick={onClose}
-    >
+    <>
       <motion.div
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
-        onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+        onClick={onClose}
       >
-        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-2xl z-10">
-          <div className="flex items-center justify-between">
+        <motion.div
+          initial={{ scale: 0.9, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.9, y: 20 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
+        >
+          <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-2xl z-10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">{application.fullName}</h2>
+                <p className="text-blue-100 text-sm mt-1">Başvuru Detayları ve Belgeler</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="text-white hover:bg-white/20"
+              >
+                <X className="w-6 h-6" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
             <div>
-              <h2 className="text-2xl font-bold">{application.fullName}</h2>
-              <p className="text-blue-100 text-sm mt-1">Başvuru Detayları</p>
+              <h3 className="text-lg font-bold text-[#121212] mb-4">👤 Kişisel Bilgiler</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <InfoBox icon={User} label="Ad Soyad" value={application.fullName} />
+                <InfoBox icon={Mail} label="E-posta" value={application.email} />
+                <InfoBox icon={Phone} label="Telefon" value={application.phone} />
+                <InfoBox icon={MapPin} label="Çalışma Bölgesi" value={application.location} />
+              </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="text-white hover:bg-white/20"
-            >
-              <X className="w-6 h-6" />
-            </Button>
-          </div>
-        </div>
 
-        <div className="p-6 space-y-6">
-          <div>
-            <h3 className="text-lg font-bold text-[#121212] mb-4">👤 Kişisel Bilgiler</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <InfoBox icon={User} label="Ad Soyad" value={application.fullName} />
-              <InfoBox icon={Mail} label="E-posta" value={application.email} />
-              <InfoBox icon={Phone} label="Telefon" value={application.phone} />
-              <InfoBox icon={MapPin} label="Çalışma Bölgesi" value={application.location} />
+            <div>
+              <h3 className="text-lg font-bold text-[#121212] mb-4">🚗 Araç Bilgileri</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <InfoBox icon={Car} label="Araç Tipi" value={application.vehicleType} />
+                <InfoBox icon={Car} label="Plaka" value={application.licensePlate} />
+                <InfoBox icon={FileText} label="Ehliyet No" value={application.licenseNumber} />
+                <InfoBox icon={FileText} label="Ruhsat No" value={application.registration} />
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-bold text-[#121212] mb-4 flex items-center gap-2">
+                <Eye className="w-6 h-6 text-orange-600" />
+                📎 Yüklenen Belgeler (Tıklayarak Büyüt)
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <DocumentCardClickable 
+                  label="Sürücü Belgesi" 
+                  filename={application.driverLicenseImage}
+                  onClick={() => setViewingImage(application.driverLicenseImage)}
+                />
+                <DocumentCardClickable 
+                  label="Araç Ruhsatı" 
+                  filename={application.vehicleRegistrationImage}
+                  onClick={() => setViewingImage(application.vehicleRegistrationImage)}
+                />
+                <DocumentCardClickable 
+                  label="Araç Fotoğrafı" 
+                  filename={application.vehiclePhotoImage}
+                  onClick={() => setViewingImage(application.vehiclePhotoImage)}
+                />
+                <DocumentCardClickable 
+                  label="Kimlik Fotoğrafı" 
+                  filename={application.idPhotoImage}
+                  onClick={() => setViewingImage(application.idPhotoImage)}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t-2 border-gray-200">
+              <Button
+                onClick={() => {
+                  onApprove(application.id);
+                  onClose();
+                }}
+                className="flex-1 h-14 bg-green-600 hover:bg-green-700 text-white text-lg font-bold"
+              >
+                <Check className="mr-2 w-6 h-6" />
+                Başvuruyu Onayla
+              </Button>
+              <Button
+                onClick={() => {
+                  onReject(application.id);
+                  onClose();
+                }}
+                className="flex-1 h-14 bg-red-600 hover:bg-red-700 text-white text-lg font-bold"
+              >
+                <X className="mr-2 w-6 h-6" />
+                Başvuruyu Reddet
+              </Button>
             </div>
           </div>
-
-          <div>
-            <h3 className="text-lg font-bold text-[#121212] mb-4">🚗 Araç Bilgileri</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <InfoBox icon={Car} label="Araç Tipi" value={application.vehicleType} />
-              <InfoBox icon={Car} label="Plaka" value={application.licensePlate} />
-              <InfoBox icon={FileText} label="Ehliyet No" value={application.licenseNumber} />
-              <InfoBox icon={FileText} label="Ruhsat No" value={application.registration} />
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-bold text-[#121212] mb-4">📎 Yüklenen Belgeler</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <DocumentCard label="Sürücü Belgesi" filename={application.driverLicenseImage} />
-              <DocumentCard label="Araç Ruhsatı" filename={application.vehicleRegistrationImage} />
-              <DocumentCard label="Araç Fotoğrafı" filename={application.vehiclePhotoImage} />
-              <DocumentCard label="Kimlik Fotoğrafı" filename={application.idPhotoImage} />
-            </div>
-          </div>
-
-          <div className="flex gap-3 pt-4 border-t-2 border-gray-200">
-            <Button
-              onClick={() => {
-                onApprove(application.id);
-                onClose();
-              }}
-              className="flex-1 h-14 bg-green-600 hover:bg-green-700 text-white text-lg font-bold"
-            >
-              <Check className="mr-2 w-6 h-6" />
-              Başvuruyu Onayla
-            </Button>
-            <Button
-              onClick={() => {
-                onReject(application.id);
-                onClose();
-              }}
-              className="flex-1 h-14 bg-red-600 hover:bg-red-700 text-white text-lg font-bold"
-            >
-              <X className="mr-2 w-6 h-6" />
-              Başvuruyu Reddet
-            </Button>
-          </div>
-        </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
+
+      {/* Image Viewer Modal */}
+      <AnimatePresence>
+        {viewingImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 backdrop-blur-md z-[60] flex items-center justify-center p-6"
+            onClick={() => setViewingImage(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative max-w-5xl max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl"
+            >
+              <div className="absolute top-4 right-4 z-10">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setViewingImage(null)}
+                  className="bg-black/50 text-white hover:bg-black/70 rounded-full w-12 h-12"
+                >
+                  <X className="w-6 h-6" />
+                </Button>
+              </div>
+              <div className="p-8">
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-12 flex items-center justify-center border-2 border-gray-200">
+                  <div className="text-center">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", duration: 0.5 }}
+                    >
+                      <FileText className="w-40 h-40 text-blue-600 mx-auto mb-6" />
+                    </motion.div>
+                    <h3 className="text-2xl font-bold text-gray-800 mb-3">Belge Önizlemesi</h3>
+                    <p className="text-base text-gray-600 mb-6 font-mono bg-white px-4 py-2 rounded-lg inline-block">
+                      {viewingImage}
+                    </p>
+                    <div className="bg-green-100 text-green-800 px-8 py-4 rounded-xl font-bold inline-block mb-6 border-2 border-green-300">
+                      ✓ Belge Başarıyla Yüklendi ve Doğrulandı
+                    </div>
+                    <p className="text-sm text-gray-500 mt-6 max-w-md mx-auto leading-relaxed">
+                      <AlertCircle className="w-4 h-4 inline mr-1" />
+                      Not: Gerçek uygulamada bu belgenin tam görüntüsü burada yüksek çözünürlükte gösterilecektir. Mock data kullanıldığı için gösterim simgesel.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
@@ -1095,17 +1177,123 @@ function TestOrdersTab({ showTestOrder, setShowTestOrder, logActivity, pricePerK
   );
 }
 
-function SettingsTab({ pricePerKm, setPricePerKm, basePrice, setBasePrice, onSave }: any) {
+function SettingsTab({ pricePerKm, setPricePerKm, basePrice, setBasePrice, onSave, logActivity }: any) {
+  const [cities, setCities] = useState<string[]>(() => {
+    return JSON.parse(localStorage.getItem('availableCities') || '["İstanbul", "Ankara", "İzmir", "Bursa", "Antalya"]');
+  });
+  const [newCity, setNewCity] = useState('');
+
+  const handleAddCity = () => {
+    if (newCity.trim() && !cities.includes(newCity.trim())) {
+      const updatedCities = [...cities, newCity.trim()];
+      setCities(updatedCities);
+      localStorage.setItem('availableCities', JSON.stringify(updatedCities));
+      logActivity('Şehir Eklendi', `${newCity.trim()} şehri açık illere eklendi`, 'success');
+      setNewCity('');
+      toast.success(`${newCity.trim()} şehri eklendi!`);
+    } else if (cities.includes(newCity.trim())) {
+      toast.error('Bu şehir zaten ekli!');
+    }
+  };
+
+  const handleRemoveCity = (cityToRemove: string) => {
+    if (cities.length === 1) {
+      toast.error('En az bir şehir olmalı!');
+      return;
+    }
+    const updatedCities = cities.filter(city => city !== cityToRemove);
+    setCities(updatedCities);
+    localStorage.setItem('availableCities', JSON.stringify(updatedCities));
+    logActivity('Şehir Kaldırıldı', `${cityToRemove} şehri açık illerden kaldırıldı`, 'warning');
+    toast.success(`${cityToRemove} şehri kaldırıldı!`);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="max-w-3xl"
+      className="max-w-4xl space-y-6"
     >
-      <h2 className="text-2xl font-bold text-[#121212] mb-6">Sistem Ayarları</h2>
+      <h2 className="text-3xl font-bold text-[#121212] mb-6">⚙️ Sistem Ayarları</h2>
 
-      <div className="bg-white rounded-xl border-2 border-gray-200 p-6 shadow-lg mb-6">
+      {/* İller Yönetimi */}
+      <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-xl">
+        <h3 className="text-xl font-bold text-[#121212] mb-4 flex items-center gap-2">
+          <MapPin className="w-6 h-6 text-[#FFD600]" />
+          İller Yönetimi
+        </h3>
+        
+        <p className="text-gray-600 mb-6">
+          Kurye başvurularının açık olduğu şehirleri yönetin. Yeni kurye başvurularında sadece bu şehirler görünecektir.
+        </p>
+
+        {/* Add City */}
+        <div className="flex gap-3 mb-6">
+          <Input
+            type="text"
+            placeholder="Yeni şehir ekle (örn: Adana)"
+            value={newCity}
+            onChange={(e) => setNewCity(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleAddCity()}
+            className="flex-1 h-12 text-base"
+          />
+          <Button
+            onClick={handleAddCity}
+            disabled={!newCity.trim()}
+            className="h-12 px-6 bg-[#FFD600] hover:bg-[#FFD600]/90 text-[#121212] font-bold disabled:opacity-50"
+          >
+            <Plus className="mr-2 w-5 h-5" />
+            Ekle
+          </Button>
+        </div>
+
+        {/* Cities Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          {cities.map((city) => (
+            <motion.div
+              key={city}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-xl p-4 flex items-center justify-between hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-200 rounded-full flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-green-700" />
+                </div>
+                <span className="font-bold text-green-900">{city}</span>
+              </div>
+              <Button
+                onClick={() => handleRemoveCity(city)}
+                variant="ghost"
+                size="icon"
+                className="w-8 h-8 text-red-600 hover:text-red-700 hover:bg-red-100 rounded-full"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </motion.div>
+          ))}
+        </div>
+
+        {cities.length === 0 && (
+          <div className="text-center py-12 text-gray-500">
+            <MapPin className="w-16 h-16 mx-auto mb-3 text-gray-300" />
+            <p>Henüz açık şehir bulunmuyor</p>
+          </div>
+        )}
+
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mt-6">
+          <p className="text-sm text-blue-800 flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+            <span>
+              <strong>📍 Not:</strong> Şehir eklendiğinde kurye başvuru formunda otomatik olarak seçenek olarak görünecektir. Şehir kaldırıldığında yeni başvurular bu şehir için kabul edilmez.
+            </span>
+          </p>
+        </div>
+      </div>
+
+      {/* Fiyatlandırma Ayarları */}
+      <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-xl">
         <h3 className="text-xl font-bold text-[#121212] mb-6 flex items-center gap-2">
           <DollarSign className="w-6 h-6 text-green-600" />
           Fiyatlandırma Ayarları
@@ -1164,16 +1352,16 @@ function SettingsTab({ pricePerKm, setPricePerKm, basePrice, setBasePrice, onSav
             className="w-full h-14 bg-[#FFD600] hover:bg-[#FFD600]/90 text-[#121212] text-lg font-bold"
           >
             <Check className="mr-2 w-6 h-6" />
-            Ayarları Kaydet
+            Fiyatlandırmayı Kaydet
           </Button>
         </div>
       </div>
 
-      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-        <p className="text-sm text-blue-800 flex items-start gap-2">
+      <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-6">
+        <p className="text-sm text-orange-800 flex items-start gap-2">
           <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
           <span>
-            <strong>Not:</strong> Fiyat değişiklikleri yalnızca yeni siparişler için geçerli olacaktır. 
+            <strong>⚠️ Not:</strong> Fiyat değişiklikleri yalnızca yeni siparişler için geçerli olacaktır. 
             Mevcut siparişler eski fiyatlandırma ile devam eder.
           </span>
         </p>
@@ -1211,89 +1399,120 @@ function LogsTab() {
       exit={{ opacity: 0 }}
       className="space-y-6"
     >
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-[#121212]">Aktivite Logları</h2>
-        <div className="flex gap-2">
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-3xl font-bold text-[#121212]">📋 Aktivite Logları</h2>
+        <div className="flex gap-3">
           <Button
             onClick={() => setFilter('all')}
-            variant={filter === 'all' ? 'default' : 'outline'}
-            className="h-10"
+            className={`h-11 px-6 rounded-xl font-bold transition-all ${
+              filter === 'all' 
+                ? 'bg-[#FFD600] text-[#121212] shadow-lg' 
+                : 'bg-white text-gray-600 hover:bg-gray-50 border-2 border-gray-200'
+            }`}
           >
             Tümü ({logs.length})
           </Button>
           <Button
             onClick={() => setFilter('success')}
-            variant={filter === 'success' ? 'default' : 'outline'}
-            className="h-10 text-green-600"
+            className={`h-11 px-6 rounded-xl font-bold transition-all ${
+              filter === 'success' 
+                ? 'bg-green-600 text-white shadow-lg' 
+                : 'bg-white text-green-600 hover:bg-green-50 border-2 border-green-200'
+            }`}
           >
-            Başarılı
+            ✓ Başarılı
           </Button>
           <Button
             onClick={() => setFilter('warning')}
-            variant={filter === 'warning' ? 'default' : 'outline'}
-            className="h-10 text-orange-600"
+            className={`h-11 px-6 rounded-xl font-bold transition-all ${
+              filter === 'warning' 
+                ? 'bg-orange-600 text-white shadow-lg' 
+                : 'bg-white text-orange-600 hover:bg-orange-50 border-2 border-orange-200'
+            }`}
           >
-            Uyarı
+            ⚠ Uyarı
           </Button>
           <Button
             onClick={() => setFilter('error')}
-            variant={filter === 'error' ? 'default' : 'outline'}
-            className="h-10 text-red-600"
+            className={`h-11 px-6 rounded-xl font-bold transition-all ${
+              filter === 'error' 
+                ? 'bg-red-600 text-white shadow-lg' 
+                : 'bg-white text-red-600 hover:bg-red-50 border-2 border-red-200'
+            }`}
           >
-            Hata
+            ✕ Hata
           </Button>
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {filteredLogs.map((log: any, index: number) => (
           <motion.div
             key={log.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className={`bg-white rounded-xl border-2 p-5 hover:shadow-lg transition-all ${
-              log.type === 'success' ? 'border-green-200' :
-              log.type === 'warning' ? 'border-orange-200' :
-              log.type === 'error' ? 'border-red-200' :
-              'border-gray-200'
-            }`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.03 }}
+            className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all overflow-hidden border-l-4"
+            style={{
+              borderLeftColor: 
+                log.type === 'success' ? '#4CAF50' :
+                log.type === 'warning' ? '#FF9800' :
+                log.type === 'error' ? '#F44336' : '#2196F3'
+            }}
           >
-            <div className="flex items-start gap-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                log.type === 'success' ? 'bg-green-100' :
-                log.type === 'warning' ? 'bg-orange-100' :
-                log.type === 'error' ? 'bg-red-100' :
-                'bg-blue-100'
-              }`}>
-                <Activity className={`w-6 h-6 ${
-                  log.type === 'success' ? 'text-green-600' :
-                  log.type === 'warning' ? 'text-orange-600' :
-                  log.type === 'error' ? 'text-red-600' :
-                  'text-blue-600'
-                }`} />
-              </div>
-              
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-2">
-                  <h4 className="font-bold text-[#121212] text-lg">{log.action}</h4>
-                  <span className="text-xs text-gray-500">
-                    {new Date(log.timestamp).toLocaleString('tr-TR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit'
-                    })}
-                  </span>
+            <div className="p-6">
+              <div className="flex items-start gap-4">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md ${
+                  log.type === 'success' ? 'bg-green-100' :
+                  log.type === 'warning' ? 'bg-orange-100' :
+                  log.type === 'error' ? 'bg-red-100' :
+                  'bg-blue-100'
+                }`}>
+                  <Activity className={`w-7 h-7 ${
+                    log.type === 'success' ? 'text-green-600' :
+                    log.type === 'warning' ? 'text-orange-600' :
+                    log.type === 'error' ? 'text-red-600' :
+                    'text-blue-600'
+                  }`} />
                 </div>
-                <p className="text-gray-700 mb-2">{log.description}</p>
-                <div className="flex items-center gap-4 text-sm text-gray-600">
-                  <span className="flex items-center gap-1">
-                    <User className="w-4 h-4" />
-                    {log.user}
-                  </span>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <h4 className="text-2xl font-bold text-[#121212] leading-tight">
+                      {log.action}
+                    </h4>
+                    <span className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap flex-shrink-0 ${
+                      log.type === 'success' ? 'bg-green-100 text-green-700' :
+                      log.type === 'warning' ? 'bg-orange-100 text-orange-700' :
+                      log.type === 'error' ? 'bg-red-100 text-red-700' :
+                      'bg-blue-100 text-blue-700'
+                    }`}>
+                      {log.type === 'success' ? '✓ Başarılı' :
+                       log.type === 'warning' ? '⚠ Uyarı' :
+                       log.type === 'error' ? '✕ Hata' : 'ℹ Bilgi'}
+                    </span>
+                  </div>
+                  <p className="text-gray-700 text-lg leading-relaxed mb-4">
+                    {log.description}
+                  </p>
+                  <div className="flex items-center gap-6 text-sm bg-gray-50 rounded-xl p-3">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <User className="w-4 h-4" />
+                      <span className="font-semibold">👤 {log.user}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Clock className="w-4 h-4" />
+                      <span className="font-medium">
+                        🕐 {new Date(log.timestamp).toLocaleString('tr-TR', {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1346,5 +1565,35 @@ function DocumentCard({ label, filename }: any) {
         </div>
       </div>
     </div>
+  );
+}
+
+function DocumentCardClickable({ label, filename, onClick }: any) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-4 hover:border-blue-400 hover:shadow-xl transition-all cursor-pointer transform hover:scale-105"
+    >
+      <div className="flex items-start gap-3">
+        <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+          <FileText className="w-7 h-7 text-white" />
+        </div>
+        <div className="flex-1 min-w-0 text-left">
+          <p className="text-sm font-bold text-[#121212] mb-2">{label}</p>
+          <p className="text-xs text-gray-700 truncate mb-3 font-mono bg-white px-2 py-1 rounded">
+            {filename || 'Belge yüklenmedi'}
+          </p>
+          <div className="flex gap-2">
+            <span className="text-xs bg-green-500 text-white px-3 py-1 rounded-full font-bold">
+              ✓ Yüklendi
+            </span>
+            <span className="text-xs bg-blue-600 text-white px-3 py-1 rounded-full font-bold flex items-center gap-1">
+              <Eye className="w-3 h-3" />
+              Görüntüle
+            </span>
+          </div>
+        </div>
+      </div>
+    </button>
   );
 }

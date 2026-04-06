@@ -26,7 +26,7 @@ interface FormData {
   licensePlate: string;
   vehicleType: string;
   registration: string;
-  location: string;
+  city: string;
   driverLicenseImage: File | null;
   vehicleRegistrationImage: File | null;
   vehiclePhotoImage: File | null;
@@ -36,6 +36,10 @@ interface FormData {
 export function CourierApplication() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  
+  // Açık iller listesini localStorage'dan al
+  const availableCities = JSON.parse(localStorage.getItem('availableCities') || '["İstanbul", "Ankara", "İzmir", "Bursa", "Antalya"]');
+  
   const [formData, setFormData] = useState<FormData>({
     fullName: '',
     email: '',
@@ -44,7 +48,7 @@ export function CourierApplication() {
     licensePlate: '',
     vehicleType: 'motorcycle',
     registration: '',
-    location: '',
+    city: '',
     driverLicenseImage: null,
     vehicleRegistrationImage: null,
     vehiclePhotoImage: null,
@@ -83,13 +87,13 @@ export function CourierApplication() {
     });
     localStorage.setItem('courierApplications', JSON.stringify(applications));
     
-    toast.success('Application submitted successfully!');
+    toast.success('✅ Başvurunuz başarıyla gönderildi! İncelendikten sonra size dönüş yapılacaktır.');
     setTimeout(() => navigate('/login'), 2000);
   };
 
   const canProceed = () => {
     if (step === 1) {
-      return formData.fullName && formData.email && formData.phone && formData.location;
+      return formData.fullName && formData.email && formData.phone && formData.city;
     }
     if (step === 2) {
       return formData.licenseNumber && formData.licensePlate && formData.vehicleType && formData.registration;
@@ -110,8 +114,8 @@ export function CourierApplication() {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-2xl mx-auto"
         >
-          <h1 className="text-2xl font-bold mb-2">Become a Courier</h1>
-          <p className="text-gray-400 text-sm">Complete your application to start earning</p>
+          <h1 className="text-2xl font-bold mb-2">Kurye Ol</h1>
+          <p className="text-gray-400 text-sm">Başvurunu tamamla ve kazanmaya başla</p>
           
           {/* Progress bar */}
           <div className="flex gap-2 mt-4">
@@ -127,8 +131,34 @@ export function CourierApplication() {
         </motion.div>
       </div>
 
+      {/* Available Cities Info */}
+      <div className="max-w-2xl mx-auto p-6 pt-4">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-2xl p-4 mb-6"
+        >
+          <div className="flex items-start gap-3">
+            <MapPin className="w-6 h-6 text-green-600 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-green-900 mb-2">Açık İller</h3>
+              <div className="flex flex-wrap gap-2">
+                {availableCities.map((city: string) => (
+                  <span key={city} className="px-3 py-1 bg-white rounded-full text-sm font-semibold text-green-700 shadow-sm">
+                    {city}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-green-700 mt-2">
+                Şu anda bu şehirlerde aktif olarak kurye alıyoruz!
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
       {/* Form Content */}
-      <div className="max-w-2xl mx-auto p-6 pb-32">
+      <div className="max-w-2xl mx-auto px-6 pb-32">
         {step === 1 && (
           <motion.div
             key="step1"
@@ -138,18 +168,18 @@ export function CourierApplication() {
             className="space-y-6"
           >
             <div>
-              <h2 className="text-xl font-bold text-[#121212] mb-4">Personal Information</h2>
+              <h2 className="text-xl font-bold text-[#121212] mb-4">Kişisel Bilgiler</h2>
               
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="fullName" className="flex items-center gap-2 mb-2">
                     <User className="w-4 h-4" />
-                    Full Name *
+                    Tam Ad Soyad *
                   </Label>
                   <Input
                     id="fullName"
                     type="text"
-                    placeholder="Enter your full name"
+                    placeholder="Adınızı ve soyadınızı girin"
                     value={formData.fullName}
                     onChange={(e) => handleInputChange('fullName', e.target.value)}
                     className="h-12"
@@ -159,12 +189,12 @@ export function CourierApplication() {
                 <div>
                   <Label htmlFor="email" className="flex items-center gap-2 mb-2">
                     <Mail className="w-4 h-4" />
-                    Email Address *
+                    E-posta Adresi *
                   </Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="your.email@example.com"
+                    placeholder="ornek@email.com"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     className="h-12"
@@ -174,7 +204,7 @@ export function CourierApplication() {
                 <div>
                   <Label htmlFor="phone" className="flex items-center gap-2 mb-2">
                     <Phone className="w-4 h-4" />
-                    Phone Number *
+                    Telefon Numarası *
                   </Label>
                   <Input
                     id="phone"
@@ -187,18 +217,27 @@ export function CourierApplication() {
                 </div>
 
                 <div>
-                  <Label htmlFor="location" className="flex items-center gap-2 mb-2">
+                  <Label htmlFor="city" className="flex items-center gap-2 mb-2">
                     <MapPin className="w-4 h-4" />
-                    Preferred Working Location *
+                    Çalışmak İstediğiniz Şehir *
                   </Label>
-                  <Input
-                    id="location"
-                    type="text"
-                    placeholder="e.g., Istanbul - Kadıköy"
-                    value={formData.location}
-                    onChange={(e) => handleInputChange('location', e.target.value)}
-                    className="h-12"
-                  />
+                  <select
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    className="w-full h-12 px-3 rounded-lg border-2 border-gray-300 bg-white font-semibold focus:border-[#FFD600] focus:outline-none"
+                  >
+                    <option value="">Şehir seçin...</option>
+                    {availableCities.map((city: string) => (
+                      <option key={city} value={city}>📍 {city}</option>
+                    ))}
+                  </select>
+                  {formData.city && (
+                    <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                      <CheckCircle className="w-4 h-4" />
+                      {formData.city} şehrinde çalışabilirsiniz!
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -214,18 +253,18 @@ export function CourierApplication() {
             className="space-y-6"
           >
             <div>
-              <h2 className="text-xl font-bold text-[#121212] mb-4">Vehicle Information</h2>
+              <h2 className="text-xl font-bold text-[#121212] mb-4">Araç Bilgileri</h2>
               
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="licenseNumber" className="flex items-center gap-2 mb-2">
                     <FileText className="w-4 h-4" />
-                    Driver's License Number *
+                    Sürücü Belgesi Numarası *
                   </Label>
                   <Input
                     id="licenseNumber"
                     type="text"
-                    placeholder="Enter license number"
+                    placeholder="Ehliyet numaranızı girin"
                     value={formData.licenseNumber}
                     onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
                     className="h-12"
@@ -235,7 +274,7 @@ export function CourierApplication() {
                 <div>
                   <Label htmlFor="licensePlate" className="flex items-center gap-2 mb-2">
                     <Car className="w-4 h-4" />
-                    License Plate *
+                    Araç Plakası *
                   </Label>
                   <Input
                     id="licensePlate"
@@ -250,30 +289,30 @@ export function CourierApplication() {
                 <div>
                   <Label htmlFor="vehicleType" className="flex items-center gap-2 mb-2">
                     <Car className="w-4 h-4" />
-                    Vehicle Type *
+                    Araç Tipi *
                   </Label>
                   <select
                     id="vehicleType"
                     value={formData.vehicleType}
                     onChange={(e) => handleInputChange('vehicleType', e.target.value)}
-                    className="w-full h-12 px-3 rounded-lg border border-gray-300 bg-white"
+                    className="w-full h-12 px-3 rounded-lg border-2 border-gray-300 bg-white font-semibold focus:border-[#FFD600] focus:outline-none"
                   >
-                    <option value="motorcycle">Motorcycle</option>
-                    <option value="bicycle">Bicycle</option>
-                    <option value="car">Car</option>
-                    <option value="scooter">Scooter</option>
+                    <option value="motorcycle">🏍️ Motosiklet</option>
+                    <option value="bicycle">🚲 Bisiklet</option>
+                    <option value="car">🚗 Araba</option>
+                    <option value="scooter">🛵 Scooter</option>
                   </select>
                 </div>
 
                 <div>
                   <Label htmlFor="registration" className="flex items-center gap-2 mb-2">
                     <FileText className="w-4 h-4" />
-                    Vehicle Registration Number *
+                    Araç Ruhsat Numarası *
                   </Label>
                   <Input
                     id="registration"
                     type="text"
-                    placeholder="Enter registration number"
+                    placeholder="Ruhsat numaranızı girin"
                     value={formData.registration}
                     onChange={(e) => handleInputChange('registration', e.target.value)}
                     className="h-12"
@@ -293,30 +332,30 @@ export function CourierApplication() {
             className="space-y-6"
           >
             <div>
-              <h2 className="text-xl font-bold text-[#121212] mb-4">Document Upload</h2>
-              <p className="text-gray-600 text-sm mb-6">Upload clear photos of your documents</p>
+              <h2 className="text-xl font-bold text-[#121212] mb-4">Belge Yüklemeleri</h2>
+              <p className="text-gray-600 text-sm mb-6">Belgelerinizin net fotoğraflarını yükleyin</p>
               
               <div className="space-y-4">
                 <FileUploadCard
-                  label="Driver's License Photo"
+                  label="Sürücü Belgesi Fotoğrafı"
                   file={formData.driverLicenseImage}
                   onFileSelect={(file) => handleFileUpload('driverLicenseImage', file)}
                 />
                 
                 <FileUploadCard
-                  label="Vehicle Registration Photo"
+                  label="Araç Ruhsatı Fotoğrafı"
                   file={formData.vehicleRegistrationImage}
                   onFileSelect={(file) => handleFileUpload('vehicleRegistrationImage', file)}
                 />
                 
                 <FileUploadCard
-                  label="Vehicle Photo"
+                  label="Araç Fotoğrafı"
                   file={formData.vehiclePhotoImage}
                   onFileSelect={(file) => handleFileUpload('vehiclePhotoImage', file)}
                 />
                 
                 <FileUploadCard
-                  label="ID Photo"
+                  label="Kimlik Fotoğrafı"
                   file={formData.idPhotoImage}
                   onFileSelect={(file) => handleFileUpload('idPhotoImage', file)}
                 />
@@ -335,7 +374,7 @@ export function CourierApplication() {
               onClick={() => setStep(step - 1)}
               className="w-24"
             >
-              Back
+              Geri
             </Button>
           )}
           <Button
@@ -346,11 +385,11 @@ export function CourierApplication() {
             {step === 3 ? (
               <>
                 <CheckCircle className="mr-2 w-5 h-5" />
-                Submit Application
+                Başvuruyu Gönder
               </>
             ) : (
               <>
-                Continue
+                Devam Et
                 <ChevronRight className="ml-2 w-5 h-5" />
               </>
             )}

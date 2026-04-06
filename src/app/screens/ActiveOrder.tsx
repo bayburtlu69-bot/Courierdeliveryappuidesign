@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -10,15 +10,16 @@ import {
   CheckCircle2,
   DollarSign,
   AlertCircle,
-  ChevronRight,
   CreditCard,
   Wallet,
   Banknote,
   Clock,
   Package,
+  CheckCircle,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { MockMap } from '../components/MockMap';
+import { ThankYouPopup } from '../components/ThankYouPopup';
 import { toast } from 'sonner';
 
 type OrderStep = 'go-to-restaurant' | 'pickup' | 'deliver';
@@ -38,10 +39,13 @@ export function ActiveOrder() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [currentStep, setCurrentStep] = useState<OrderStep>('go-to-restaurant');
-  const [slideProgress, setSlideProgress] = useState(0);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const [isHolding, setIsHolding] = useState(false);
+  const [showExplosion, setShowExplosion] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [showThankYou, setShowThankYou] = useState(false);
   const [order, setOrder] = useState<any>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const holdIntervalRef = useRef<any>(null);
 
   useEffect(() => {
     // Siparişi localStorage'dan al
@@ -76,6 +80,14 @@ export function ActiveOrder() {
       });
     }
   }, [id]);
+
+  useEffect(() => {
+    return () => {
+      if (holdIntervalRef.current) {
+        clearInterval(holdIntervalRef.current);
+      }
+    };
+  }, []);
 
   if (!order) {
     return <div>Yükleniyor...</div>;
@@ -114,7 +126,7 @@ export function ActiveOrder() {
       amount,
       method,
       timestamp: new Date().toISOString(),
-      courierName: 'Kurye Kullanıcı', // Gerçek uygulamada auth'dan gelecek
+      courierName: 'Kurye Kullanıcı',
       customerName: order.customerName,
       status: method === 'online' ? 'completed' : 'collected',
     };
@@ -123,7 +135,6 @@ export function ActiveOrder() {
     logs.unshift(paymentLog);
     localStorage.setItem('paymentLogs', JSON.stringify(logs));
 
-    // Activity log'a da ekle
     const activityLogs = JSON.parse(localStorage.getItem('activityLogs') || '[]');
     activityLogs.unshift({
       id: Date.now(),
@@ -139,85 +150,110 @@ export function ActiveOrder() {
     localStorage.setItem('activityLogs', JSON.stringify(activityLogs.slice(0, 500)));
   };
 
-  const handleSlideComplete = () => {
-    if (slideProgress < 80) return;
-
-    if (currentStep === 'go-to-restaurant') {
-      setCurrentStep('pickup');
-      setSlideProgress(0);
-      toast.success('Mağazaya vardınız!');
+  const handleHoldStart = () => {
+    setIsHolding(true);
+    let progress = 0;
+    
+    holdIntervalRef.current = setInterval(() => {
+      progress += 2;
+      setHoldProgress(progress);
       
-      // Log activity
-      const logs = JSON.parse(localStorage.getItem('activityLogs') || '[]');
-      logs.unshift({
-        id: Date.now(),
-        action: 'Mağazaya Varış',
-        description: `${order.id} - ${order.restaurant} mağazasına varıldı`,
-        type: 'info',
-        timestamp: new Date().toISOString(),
-        user: 'Kurye',
-      });
-      localStorage.setItem('activityLogs', JSON.stringify(logs));
-      
-    } else if (currentStep === 'pickup') {
-      setCurrentStep('deliver');
-      setSlideProgress(0);
-      toast.success('Sipariş alındı! Teslimat adresine yönlenin.');
-      
-      // Log activity
-      const logs = JSON.parse(localStorage.getItem('activityLogs') || '[]');
-      logs.unshift({
-        id: Date.now(),
-        action: 'Sipariş Alındı',
-        description: `${order.id} - Sipariş mağazadan alındı, teslimat başlıyor`,
-        type: 'info',
-        timestamp: new Date().toISOString(),
-        user: 'Kurye',
-      });
-      localStorage.setItem('activityLogs', JSON.stringify(logs));
-      
-    } else {
-      // Ödeme işle
-      if (order.paymentMethod === 'cash') {
-        logPaymentCollection('cash', order.totalPrice);
-        toast.success(`${order.totalPrice.toFixed(2)}₺ nakit tahsil edildi!`);
-      } else if (order.paymentMethod === 'card') {
-        logPaymentCollection('card', order.totalPrice);
-        toast.success(`${order.totalPrice.toFixed(2)}₺ kart ile tahsil edildi!`);
+      if (progress >= 100) {
+        clearInterval(holdIntervalRef.current);
+        handleStepComplete();
       }
+    }, 30); // 1.5 saniye (30ms * 50 = 1500ms)
+  };
 
-      // Siparişi tamamla
-      const activeOrders = JSON.parse(localStorage.getItem('activeOrders') || '[]');
-      const updatedOrders = activeOrders.filter((o: any) => o.id !== order.id);
-      localStorage.setItem('activeOrders', JSON.stringify(updatedOrders));
-
-      // Tamamlanan siparişlere ekle
-      const completedOrders = JSON.parse(localStorage.getItem('completedOrders') || '[]');
-      completedOrders.unshift({
-        ...order,
-        completedAt: new Date().toISOString(),
-        courierEarning: order.courierEarning || (order.totalPrice * 0.7),
-      });
-      localStorage.setItem('completedOrders', JSON.stringify(completedOrders));
-
-      // Log activity
-      const logs = JSON.parse(localStorage.getItem('activityLogs') || '[]');
-      logs.unshift({
-        id: Date.now(),
-        action: 'Teslimat Tamamlandı',
-        description: `${order.id} - Sipariş başarıyla teslim edildi. Kazanç: ${(order.courierEarning || (order.totalPrice * 0.7)).toFixed(2)}₺`,
-        type: 'success',
-        timestamp: new Date().toISOString(),
-        user: 'Kurye',
-        metadata: order,
-      });
-      localStorage.setItem('activityLogs', JSON.stringify(logs));
-
-      toast.success('🎉 Teslimat tamamlandı! Harikasınız!');
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1500);
+  const handleHoldEnd = () => {
+    setIsHolding(false);
+    if (holdIntervalRef.current) {
+      clearInterval(holdIntervalRef.current);
     }
+    
+    if (holdProgress < 100) {
+      // Reset progress with animation
+      setHoldProgress(0);
+    }
+  };
+
+  const handleStepComplete = () => {
+    setShowExplosion(true);
+    setHoldProgress(0);
+    setIsHolding(false);
+
+    setTimeout(() => {
+      setShowExplosion(false);
+
+      if (currentStep === 'go-to-restaurant') {
+        setCurrentStep('pickup');
+        
+        const logs = JSON.parse(localStorage.getItem('activityLogs') || '[]');
+        logs.unshift({
+          id: Date.now(),
+          action: 'Mağazaya Varış',
+          description: `${order.id} - ${order.restaurant} mağazasına varıldı`,
+          type: 'info',
+          timestamp: new Date().toISOString(),
+          user: 'Kurye',
+        });
+        localStorage.setItem('activityLogs', JSON.stringify(logs));
+        
+      } else if (currentStep === 'pickup') {
+        setCurrentStep('deliver');
+        
+        const logs = JSON.parse(localStorage.getItem('activityLogs') || '[]');
+        logs.unshift({
+          id: Date.now(),
+          action: 'Sipariş Alındı',
+          description: `${order.id} - Sipariş mağazadan alındı, teslimat başlıyor`,
+          type: 'info',
+          timestamp: new Date().toISOString(),
+          user: 'Kurye',
+        });
+        localStorage.setItem('activityLogs', JSON.stringify(logs));
+        
+      } else {
+        // Ödeme işle
+        if (order.paymentMethod === 'cash') {
+          logPaymentCollection('cash', order.totalPrice);
+        } else if (order.paymentMethod === 'card') {
+          logPaymentCollection('card', order.totalPrice);
+        }
+
+        // Siparişi tamamla
+        const activeOrders = JSON.parse(localStorage.getItem('activeOrders') || '[]');
+        const updatedOrders = activeOrders.filter((o: any) => o.id !== order.id);
+        localStorage.setItem('activeOrders', JSON.stringify(updatedOrders));
+
+        const completedOrders = JSON.parse(localStorage.getItem('completedOrders') || '[]');
+        completedOrders.unshift({
+          ...order,
+          completedAt: new Date().toISOString(),
+          courierEarning: order.courierEarning || (order.totalPrice * 0.7),
+        });
+        localStorage.setItem('completedOrders', JSON.stringify(completedOrders));
+
+        const logs = JSON.parse(localStorage.getItem('activityLogs') || '[]');
+        logs.unshift({
+          id: Date.now(),
+          action: 'Teslimat Tamamlandı',
+          description: `${order.id} - Sipariş başarıyla teslim edildi. Kazanç: ${((order.courierEarning || (parseFloat(order.totalPrice) || 0) * 0.7) || 0).toFixed(2)}₺`,
+          type: 'success',
+          timestamp: new Date().toISOString(),
+          user: 'Kurye',
+          metadata: order,
+        });
+        localStorage.setItem('activityLogs', JSON.stringify(logs));
+
+        // Çevrimiçi durumunu koru
+        localStorage.setItem('isOnline', 'true');
+
+        setTimeout(() => {
+          setShowThankYou(true);
+        }, 800);
+      }
+    }, 600);
   };
 
   const handleNavigateToLocation = () => {
@@ -247,6 +283,17 @@ export function ActiveOrder() {
         return 'Kapıda Kart ile Ödeme';
       case 'online':
         return 'Online Ödendi';
+    }
+  };
+
+  const getButtonText = () => {
+    switch (currentStep) {
+      case 'go-to-restaurant':
+        return 'Mağazaya Vardım';
+      case 'pickup':
+        return 'Siparişi Aldım';
+      case 'deliver':
+        return 'Teslim Ettim';
     }
   };
 
@@ -297,6 +344,41 @@ export function ActiveOrder() {
 
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
+      {/* Explosion Effect */}
+      <AnimatePresence>
+        {showExplosion && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 pointer-events-none"
+          >
+            {[...Array(20)].map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{
+                  x: '50vw',
+                  y: '80vh',
+                  scale: 0,
+                  opacity: 1,
+                }}
+                animate={{
+                  x: `${50 + (Math.random() - 0.5) * 100}vw`,
+                  y: `${80 + (Math.random() - 0.5) * 100}vh`,
+                  scale: Math.random() * 2 + 1,
+                  opacity: 0,
+                }}
+                transition={{
+                  duration: 0.8,
+                  ease: 'easeOut',
+                }}
+                className="absolute w-4 h-4 bg-[#FFD600] rounded-full"
+              />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="bg-[#121212] text-white p-6">
         <div className="flex items-center justify-between mb-4">
@@ -425,31 +507,105 @@ export function ActiveOrder() {
           )}
         </motion.div>
 
+        {/* Earnings - Moved up to avoid overlap */}
+        <div className="bg-gradient-to-r from-[#FFD600] to-[#FFC107] rounded-2xl p-6 shadow-xl border-2 border-yellow-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[#121212] font-semibold mb-2 flex items-center gap-2">
+                <DollarSign className="w-5 h-5" />
+                Senin Kazancın
+              </p>
+              <p className="text-4xl font-bold text-[#121212]">
+                {(parseFloat(order.courierEarning) || (parseFloat(order.totalPrice) || 0) * 0.7 || 0).toFixed(2)}₺
+              </p>
+              <p className="text-sm text-[#121212] opacity-70 mt-1">
+                {order.distance} • Tahmini süre: {Math.ceil(parseFloat(order.distance) * 3)} dakika
+              </p>
+            </div>
+            <div className="w-20 h-20 bg-[#121212] rounded-2xl flex items-center justify-center relative overflow-hidden">
+              {/* Animasyonlu para işaretleri */}
+              <motion.div
+                animate={{
+                  y: ['-100%', '200%'],
+                  x: ['-10px', '10px', '-10px'],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: 'linear',
+                }}
+                className="absolute text-4xl"
+              >
+                💰
+              </motion.div>
+              <motion.div
+                animate={{
+                  y: ['-100%', '200%'],
+                  x: ['10px', '-10px', '10px'],
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: 'linear',
+                  delay: 1,
+                }}
+                className="absolute text-3xl"
+              >
+                💸
+              </motion.div>
+              <motion.div
+                animate={{
+                  y: ['-100%', '200%'],
+                }}
+                transition={{
+                  duration: 3.5,
+                  repeat: Infinity,
+                  ease: 'linear',
+                  delay: 0.5,
+                }}
+                className="absolute text-3xl"
+              >
+                💵
+              </motion.div>
+            </div>
+          </div>
+        </div>
+
         {/* Payment Method */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-gray-200">
-          <h3 className="font-bold text-[#121212] text-lg mb-4 flex items-center gap-2">
-            <DollarSign className="w-6 h-6 text-green-600" />
-            Ödeme Bilgileri
+        <div className="bg-white rounded-2xl p-6 shadow-xl border-2 border-gray-200">
+          <h3 className="text-lg font-bold text-[#121212] mb-4 flex items-center gap-2">
+            <CreditCard className="w-6 h-6 text-[#FFD600]" />
+            Ödeme Yöntemi
           </h3>
-          <div className="flex items-center gap-4 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 border-2 border-green-200">
-            {getPaymentIcon()}
-            <div className="flex-1">
-              <p className="font-bold text-[#121212] text-lg">{getPaymentText()}</p>
-              {order.paymentMethod === 'cash' && (
-                <p className="text-sm text-gray-700 mt-1">
-                  💵 Müşteriden <strong className="text-green-700">{order.totalPrice.toFixed(2)}₺</strong> nakit tahsil edilecek
-                </p>
+          <div className={`flex items-center gap-4 p-4 rounded-xl ${
+            order.paymentMethod === 'cash' ? 'bg-green-50 border-2 border-green-200' :
+            order.paymentMethod === 'card' ? 'bg-blue-50 border-2 border-blue-200' :
+            'bg-purple-50 border-2 border-purple-200'
+          }`}>
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+              order.paymentMethod === 'cash' ? 'bg-green-100' :
+              order.paymentMethod === 'card' ? 'bg-blue-100' :
+              'bg-purple-100'
+            }`}>
+              {order.paymentMethod === 'cash' ? (
+                <Banknote className={`w-7 h-7 text-green-600`} />
+              ) : order.paymentMethod === 'card' ? (
+                <CreditCard className={`w-7 h-7 text-blue-600`} />
+              ) : (
+                <CheckCircle className={`w-7 h-7 text-purple-600`} />
               )}
-              {order.paymentMethod === 'card' && (
-                <p className="text-sm text-gray-700 mt-1">
-                  💳 Müşteriden <strong className="text-blue-700">{order.totalPrice.toFixed(2)}₺</strong> kart ile tahsil edilecek
-                </p>
-              )}
-              {order.paymentMethod === 'online' && (
-                <p className="text-sm text-green-700 mt-1 font-semibold">
-                  ✅ Ödeme alındı - Tahsilat gerekmiyor
-                </p>
-              )}
+            </div>
+            <div>
+              <p className="font-bold text-[#121212] text-lg">
+                {order.paymentMethod === 'cash' ? '💵 Kapıda Nakit' :
+                 order.paymentMethod === 'card' ? '💳 Kapıda Kart' :
+                 '✅ Online Ödendi'}
+              </p>
+              <p className="text-sm text-gray-600 mt-1">
+                {order.paymentMethod === 'online' ? 
+                  'Ödeme zaten tamamlandı' : 
+                  `${(parseFloat(order.totalPrice) || 0).toFixed(2)}₺ tahsil edilecek`}
+              </p>
             </div>
           </div>
         </div>
@@ -489,78 +645,58 @@ export function ActiveOrder() {
 
           <div className="mt-5 pt-5 border-t-2 border-gray-200 flex justify-between items-center">
             <span className="text-gray-700 font-semibold text-lg">Toplam Tutar:</span>
-            <span className="text-2xl font-bold text-[#121212]">{order.totalPrice.toFixed(2)}₺</span>
+            <span className="text-2xl font-bold text-[#121212]">{(parseFloat(order.totalPrice) || 0).toFixed(2)}₺</span>
           </div>
         </div>
 
-        {/* Earnings */}
-        <div className="bg-gradient-to-r from-[#FFD600] to-[#FFC107] rounded-2xl p-6 shadow-xl border-2 border-yellow-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[#121212] font-semibold mb-2 flex items-center gap-2">
-                <DollarSign className="w-5 h-5" />
-                Senin Kazancın
-              </p>
-              <p className="text-4xl font-bold text-[#121212]">
-                {(order.courierEarning || (order.totalPrice * 0.7)).toFixed(2)}₺
-              </p>
-              <p className="text-sm text-[#121212] opacity-70 mt-1">
-                {order.distance} • Tahmini süre: {Math.ceil(parseFloat(order.distance) * 3)} dakika
-              </p>
-            </div>
-            <div className="w-20 h-20 bg-[#121212] bg-opacity-20 rounded-2xl flex items-center justify-center">
-              <DollarSign className="w-12 h-12 text-[#121212]" />
-            </div>
-          </div>
-        </div>
+        {/* Extra space for bottom button */}
+        <div className="h-32" />
       </div>
 
-      {/* Bottom Action - Slide to Confirm */}
-      <div className="bg-white border-t-2 border-gray-200 p-6 shadow-2xl">
-        <div className="relative bg-gray-200 rounded-2xl h-20 overflow-hidden mb-2">
-          <motion.div
-            className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#FFD600] to-[#FFC107] rounded-2xl"
-            style={{ width: `${slideProgress}%` }}
-          />
-
-          <div className="absolute inset-0 flex items-center justify-center">
-            <p className="font-bold text-[#121212] text-lg">
-              {currentStep === 'deliver'
-                ? '← Kaydır ve Teslimatı Tamamla →'
-                : currentStep === 'pickup'
-                ? '← Kaydır: Siparişi Aldım →'
-                : '← Kaydır: Mağazaya Vardım →'}
-            </p>
-          </div>
-
-          <motion.div
-            drag="x"
-            dragConstraints={{ left: 0, right: 300 }}
-            dragElastic={0.1}
-            onDragStart={() => setIsDragging(true)}
-            onDrag={(_, info) => {
-              const maxWidth = window.innerWidth - 80;
-              const progress = Math.max(0, Math.min(100, (info.point.x / maxWidth) * 100));
-              setSlideProgress(progress);
+      {/* Bottom Action - Hold to Confirm */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-6 shadow-2xl">
+        <div className="relative">
+          <motion.button
+            onPointerDown={handleHoldStart}
+            onPointerUp={handleHoldEnd}
+            onPointerLeave={handleHoldEnd}
+            animate={{
+              scale: isHolding ? 0.95 : 1,
             }}
-            onDragEnd={() => {
-              setIsDragging(false);
-              if (slideProgress > 80) {
-                handleSlideComplete();
-              } else {
-                setSlideProgress(0);
-              }
-            }}
-            className="absolute left-2 top-2 w-16 h-16 bg-[#121212] rounded-xl flex items-center justify-center cursor-grab active:cursor-grabbing shadow-2xl"
-            whileTap={{ scale: 0.95 }}
+            className="relative w-full h-20 bg-gray-200 rounded-2xl overflow-hidden cursor-pointer select-none"
           >
-            <ChevronRight className="w-8 h-8 text-[#FFD600]" />
-          </motion.div>
+            {/* Progress Background */}
+            <motion.div
+              animate={{
+                width: `${holdProgress}%`,
+              }}
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#FFD600] to-[#FFC107] rounded-2xl"
+              transition={{ duration: 0.05 }}
+            />
+
+            {/* Text */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <p className="font-bold text-[#121212] text-lg z-10">
+                {isHolding ? '⏱️ Basılı Tut...' : `👆 Basılı Tut: ${getButtonText()}`}
+              </p>
+            </div>
+          </motion.button>
+
+          <p className="text-center text-xs text-gray-500 mt-3">
+            Butonu {holdProgress > 0 ? `%${Math.floor(holdProgress)}` : 'basılı tutarak'} onaylayın
+          </p>
         </div>
-        <p className="text-center text-xs text-gray-500">
-          Butonu sağa kaydırarak onaylayın
-        </p>
       </div>
+
+      {/* Thank You Popup */}
+      {showThankYou && (
+        <ThankYouPopup
+          onClose={() => {
+            setShowThankYou(false);
+            navigate('/dashboard');
+          }}
+        />
+      )}
     </div>
   );
 }
