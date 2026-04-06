@@ -456,6 +456,31 @@ export function EmployeeDashboard() {
 
 // ─── OVERVIEW ─────────────────────────────────────────────────────
 function OverviewContent({ pendingCount, ticketCount }: { pendingCount: number; ticketCount: number }) {
+  // Puan sistemi - localStorage'dan oku, yoksa mock data kullan
+  const [courierPoints, setCourierPoints] = useState<any[]>(() => {
+    const saved = localStorage.getItem('courierPointsBoard');
+    if (saved) return JSON.parse(saved);
+    const defaults = [
+      { id: 1, name: 'Ahmet Y.',   points: 1240, deliveries: 98,  rating: 4.9, badge: '🥇' },
+      { id: 2, name: 'Fatma D.',   points: 1105, deliveries: 87,  rating: 4.8, badge: '🥈' },
+      { id: 3, name: 'Mehmet K.',  points: 980,  deliveries: 76,  rating: 4.7, badge: '🥉' },
+      { id: 4, name: 'Ayşe Ö.',    points: 870,  deliveries: 68,  rating: 4.6, badge: '🎖️' },
+      { id: 5, name: 'Can B.',     points: 740,  deliveries: 58,  rating: 4.5, badge: '⭐' },
+      { id: 6, name: 'Zeynep A.', points: 620,  deliveries: 49,  rating: 4.4, badge: '⭐' },
+    ];
+    localStorage.setItem('courierPointsBoard', JSON.stringify(defaults));
+    return defaults;
+  });
+
+  const handleAddPoints = (id: number, delta: number) => {
+    const updated = courierPoints.map((c) =>
+      c.id === id ? { ...c, points: Math.max(0, c.points + delta) } : c
+    ).sort((a, b) => b.points - a.points)
+     .map((c, i) => ({ ...c, badge: ['🥇','🥈','🥉','🎖️','⭐','⭐'][i] ?? '⭐' }));
+    setCourierPoints(updated);
+    localStorage.setItem('courierPointsBoard', JSON.stringify(updated));
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
       <div className="grid grid-cols-3 gap-5">
@@ -479,6 +504,45 @@ function OverviewContent({ pendingCount, ticketCount }: { pendingCount: number; 
             </motion.div>
           );
         })}
+      </div>
+
+      {/* 🏆 Puan Sıralaması */}
+      <div className="bg-white rounded-2xl p-6 shadow-lg">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-[#121212] flex items-center gap-2">
+            🏆 Kurye Puan Sıralaması
+          </h3>
+          <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">Bu Hafta</span>
+        </div>
+        <div className="space-y-3">
+          {courierPoints.map((courier, i) => (
+            <motion.div
+              key={courier.id}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className={`flex items-center gap-3 p-3 rounded-xl ${i === 0 ? 'bg-yellow-50 border-2 border-yellow-200' : 'bg-gray-50'}`}
+            >
+              <span className="text-2xl w-8 text-center">{courier.badge}</span>
+              <div className="flex-1">
+                <p className="font-bold text-[#121212] text-sm">{courier.name}</p>
+                <p className="text-xs text-gray-400">{courier.deliveries} teslimat · ⭐ {courier.rating}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleAddPoints(courier.id, -10)}
+                  className="w-6 h-6 rounded-full bg-red-100 text-red-600 text-xs font-bold hover:bg-red-200 flex items-center justify-center"
+                >−</button>
+                <span className="text-sm font-bold text-[#121212] min-w-[48px] text-center">{courier.points} pt</span>
+                <button
+                  onClick={() => handleAddPoints(courier.id, 10)}
+                  className="w-6 h-6 rounded-full bg-green-100 text-green-600 text-xs font-bold hover:bg-green-200 flex items-center justify-center"
+                >+</button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+        <p className="text-xs text-gray-400 mt-3 text-center">+/− butonlarıyla manuel puan ekleyebilirsiniz</p>
       </div>
 
       <div className="bg-white rounded-2xl p-6 shadow-lg">
@@ -509,6 +573,7 @@ function OverviewContent({ pendingCount, ticketCount }: { pendingCount: number; 
     </motion.div>
   );
 }
+
 
 // ─── APPLICATIONS ─────────────────────────────────────────────────
 function ApplicationsContent({ applications, onApprove, onRejectRequest, viewingDocument, setViewingDocument }: any) {

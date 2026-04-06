@@ -54,6 +54,9 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 
 type Tab =
   | 'dashboard'
@@ -333,39 +336,46 @@ function DashboardTab() {
   );
 }
 
-// ─── TAB: CANLI TAKİP (MOCK MAP) ─────────────────────────────────
+// ─── TAB: CANLI TAKİP (LEAFLET MAP) ─────────────────────────────────
+
+// Fix default marker icons for bundlers
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
+
+function CourierDivIcon({ status }: { status: string }) {
+  const color = status === 'delivering' ? '#3B82F6' : status === 'online' ? '#10B981' : '#9CA3AF';
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:36px;height:36px;background:${color};border:3px solid white;
+      border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-size:18px;box-shadow:0 2px 8px rgba(0,0,0,.35);cursor:pointer;
+    ">🛵</div>`,
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -22],
+  });
+}
+
+function FitTurkey() {
+  const map = useMap();
+  useEffect(() => { map.fitBounds([[35.8, 25.6], [42.1, 44.8]]); }, [map]);
+  return null;
+}
+
 function TrackingTab() {
-  const [selectedCourier, setSelectedCourier] = useState<number | null>(null);
-  const [animTick, setAnimTick] = useState(0);
-
   const mockCouriers = [
-    { id: 1, name: 'Ahmet Y.',  status: 'delivering', x: 15, y: 18, order: '#SIP-1234', eta: '8 dk',  city: 'İstanbul' },
-    { id: 2, name: 'Fatma D.',  status: 'online',     x: 38, y: 36, order: null,         eta: null,    city: 'Ankara' },
-    { id: 3, name: 'Mehmet K.', status: 'delivering', x: 6,  y: 60, order: '#SIP-1235', eta: '12 dk', city: 'İzmir' },
-    { id: 4, name: 'Ayşe Ö.',   status: 'delivering', x: 17, y: 31, order: '#SIP-1236', eta: '5 dk',  city: 'Bursa' },
-    { id: 5, name: 'Can B.',    status: 'offline',    x: 27, y: 84, order: null,         eta: null,    city: 'Antalya' },
-    { id: 6, name: 'Zeynep A.', status: 'online',     x: 52, y: 82, order: null,         eta: null,    city: 'Adana' },
+    { id: 1, name: 'Ahmet Y.',  status: 'delivering', lat: 41.015, lng: 28.979, order: '#SIP-1234', eta: '8 dk',  city: 'İstanbul' },
+    { id: 2, name: 'Fatma D.',  status: 'online',     lat: 39.920, lng: 32.854, order: null,         eta: null,    city: 'Ankara' },
+    { id: 3, name: 'Mehmet K.', status: 'delivering', lat: 38.423, lng: 27.142, order: '#SIP-1235', eta: '12 dk', city: 'İzmir' },
+    { id: 4, name: 'Ayşe Ö.',   status: 'delivering', lat: 40.183, lng: 29.061, order: '#SIP-1236', eta: '5 dk',  city: 'Bursa' },
+    { id: 5, name: 'Can B.',    status: 'offline',    lat: 36.896, lng: 30.713, order: null,         eta: null,    city: 'Antalya' },
+    { id: 6, name: 'Zeynep A.', status: 'online',     lat: 37.002, lng: 35.321, order: null,         eta: null,    city: 'Adana' },
   ];
-
-  const cityLabels = [
-    { name: 'İstanbul',   x: 15, y: 18 },
-    { name: 'Ankara',     x: 38, y: 36 },
-    { name: 'İzmir',      x:  6, y: 60 },
-    { name: 'Bursa',      x: 17, y: 31 },
-    { name: 'Antalya',    x: 27, y: 84 },
-    { name: 'Adana',      x: 52, y: 82 },
-    { name: 'Trabzon',    x: 74, y: 18 },
-    { name: 'Kayseri',    x: 50, y: 52 },
-    { name: 'Konya',      x: 36, y: 68 },
-    { name: 'Diyarbakır', x: 70, y: 66 },
-    { name: 'Erzurum',    x: 84, y: 36 },
-    { name: 'Samsun',     x: 55, y: 19 },
-  ];
-
-  useEffect(() => {
-    const interval = setInterval(() => setAnimTick((t) => t + 1), 2000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
@@ -384,7 +394,7 @@ function TrackingTab() {
         ))}
       </div>
 
-      {/* Turkey Interactive Map */}
+      {/* Leaflet Turkey Map */}
       <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
           <h3 className="font-bold text-[#121212] flex items-center gap-2">
@@ -397,131 +407,42 @@ function TrackingTab() {
             <span className="flex items-center gap-1"><span className="w-3 h-3 bg-gray-400 rounded-full inline-block" /> Çevrimdışı</span>
           </div>
         </div>
-
-        {/* Map area */}
-        <div className="relative bg-[#b8d8f0] overflow-hidden" style={{ height: 420 }}>
-          {/* Grid */}
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage:
-                'linear-gradient(rgba(0,0,0,.35) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.35) 1px, transparent 1px)',
-              backgroundSize: '50px 50px',
-            }}
-          />
-
-          {/* SVG Turkey outline */}
-          <svg
-            className="absolute inset-0 w-full h-full"
-            viewBox="0 0 800 420"
-            preserveAspectRatio="xMidYMid meet"
+        <div style={{ height: 420 }}>
+          <MapContainer
+            center={[39.0, 35.0]}
+            zoom={6}
+            style={{ height: '100%', width: '100%' }}
+            scrollWheelZoom={true}
           >
-            <defs>
-              <linearGradient id="landGrad2" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#d9ead3" />
-                <stop offset="100%" stopColor="#c2dba8" />
-              </linearGradient>
-            </defs>
-            {/* Simplified Turkey polygon */}
-            <path
-              d="M 95 115 C 108 100, 128 86, 162 78 L 172 60 C 192 50, 234 44, 288 50 L 338 40 C 386 36, 430 42, 470 50 L 530 44 C 572 40, 622 48, 662 64 L 710 54 C 740 48, 762 60, 772 78 L 782 100 C 792 118, 786 136, 774 150 L 758 173 C 746 194, 724 214, 702 226 L 680 246 C 658 260, 632 270, 600 276 L 570 290 C 544 300, 509 306, 478 310 L 438 326 C 398 336, 356 340, 320 338 L 288 344 C 246 348, 204 340, 172 324 L 140 306 C 108 290, 88 266, 74 242 L 60 214 C 46 186, 42 154, 50 130 L 66 116 Z"
-              fill="url(#landGrad2)"
-              stroke="#9fc5a0"
-              strokeWidth="2"
+            <FitTurkey />
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {/* Sea of Marmara */}
-            <ellipse cx="158" cy="150" rx="30" ry="13" fill="#b8d8f0" opacity="0.85" />
-            {/* Bosphorus */}
-            <line x1="155" y1="136" x2="161" y2="164" stroke="#b8d8f0" strokeWidth="6" opacity="0.9" />
-            {/* Van Gölü */}
-            <ellipse cx="672" cy="192" rx="15" ry="8" fill="#b8d8f0" opacity="0.7" />
-          </svg>
-
-          {/* City dots + labels */}
-          {cityLabels.map((city) => (
-            <div
-              key={city.name}
-              className="absolute pointer-events-none"
-              style={{ left: `${city.x}%`, top: `${city.y}%`, transform: 'translate(-50%, -50%)' }}
-            >
-              <div className="w-2 h-2 bg-gray-500 rounded-full opacity-50 mx-auto" />
-              <p className="text-[9px] text-gray-700 font-medium whitespace-nowrap text-center mt-0.5 opacity-80">
-                {city.name}
-              </p>
-            </div>
-          ))}
-
-          {/* Courier markers */}
-          {mockCouriers.map((courier) => {
-            const dotColor =
-              courier.status === 'delivering' ? '#3B82F6' :
-              courier.status === 'online'     ? '#10B981' : '#9CA3AF';
-            const isSelected = selectedCourier === courier.id;
-
-            return (
-              <div
+            {mockCouriers.map((courier) => (
+              <Marker
                 key={courier.id}
-                className="absolute cursor-pointer"
-                style={{ left: `${courier.x}%`, top: `${courier.y}%`, transform: 'translate(-50%,-50%)', zIndex: isSelected ? 30 : 10 }}
-                onClick={() => setSelectedCourier(isSelected ? null : courier.id)}
+                position={[courier.lat, courier.lng]}
+                icon={CourierDivIcon({ status: courier.status })}
               >
-                {/* Pulse ring */}
-                {courier.status !== 'offline' && (
-                  <motion.div
-                    key={`pulse-${courier.id}-${animTick}`}
-                    initial={{ scale: 0.6, opacity: 0.7 }}
-                    animate={{ scale: 3, opacity: 0 }}
-                    transition={{ duration: 1.8, ease: 'easeOut' }}
-                    className="absolute rounded-full pointer-events-none"
-                    style={{ backgroundColor: dotColor, width: 34, height: 34, top: -8, left: -8 }}
-                  />
-                )}
-
-                {/* Badge */}
-                <motion.div
-                  whileHover={{ scale: 1.25 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="relative z-10 flex items-center justify-center rounded-full border-2 border-white shadow-lg select-none"
-                  style={{ width: 34, height: 34, backgroundColor: dotColor }}
-                >
-                  <span className="text-base leading-none">🛵</span>
-                </motion.div>
-
-                {/* Info popup */}
-                {isSelected && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.85, y: 6 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    className="absolute bg-white rounded-2xl p-3 shadow-2xl border border-gray-200 z-20 min-w-[170px]"
-                    style={{ bottom: 46, left: '50%', transform: 'translateX(-50%)' }}
-                  >
-                    <div
-                      className="absolute w-3 h-3 bg-white border-r border-b border-gray-200"
-                      style={{ bottom: -6, left: '50%', transform: 'translateX(-50%) rotate(45deg)' }}
-                    />
-                    <p className="font-bold text-[#121212] text-sm">{courier.name}</p>
+                <Popup>
+                  <div className="min-w-[140px]">
+                    <p className="font-bold text-[#121212]">{courier.name}</p>
                     <p className="text-xs text-gray-500">{courier.city}</p>
-                    <p
-                      className={`text-xs font-semibold mt-1 ${
-                        courier.status === 'delivering' ? 'text-blue-600' :
-                        courier.status === 'online' ? 'text-green-600' : 'text-gray-500'
-                      }`}
-                    >
+                    <p className={`text-xs font-semibold mt-1 ${
+                      courier.status === 'delivering' ? 'text-blue-600' :
+                      courier.status === 'online' ? 'text-green-600' : 'text-gray-500'
+                    }`}>
                       {courier.status === 'delivering' ? '🚴 Teslimatta' :
                        courier.status === 'online' ? '✅ Müsait' : '⭕ Çevrimdışı'}
                     </p>
                     {courier.order && <p className="text-xs text-blue-600 mt-1">📦 {courier.order}</p>}
                     {courier.eta   && <p className="text-xs text-gray-500">⏱️ ETA: {courier.eta}</p>}
-                  </motion.div>
-                )}
-              </div>
-            );
-          })}
-
-          {/* Corner label */}
-          <div className="absolute bottom-3 right-3 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-xl text-xs text-gray-500 shadow-sm">
-            Kurye ikonuna tıklayın
-          </div>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
         </div>
       </div>
 
@@ -572,6 +493,8 @@ function TrackingTab() {
     </motion.div>
   );
 }
+
+
 
 // ─── TAB: BAŞVURULAR ──────────────────────────────────────────────
 function ApplicationsTab() {

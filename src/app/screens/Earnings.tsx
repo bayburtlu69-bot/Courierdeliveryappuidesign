@@ -85,7 +85,7 @@ export function Earnings() {
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="px-4 pt-4 pb-6" style={{ backgroundColor: theme.primary }}>
+      <div className="relative z-10 px-4 pt-4 pb-6" style={{ backgroundColor: theme.primary }}>
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"

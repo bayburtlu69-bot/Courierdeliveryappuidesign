@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowLeft,
   Bell,
@@ -7,6 +8,7 @@ import {
   AlertCircle,
   TrendingUp,
   Clock,
+  X,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAppTheme } from '../utils/useAppTheme';
@@ -25,6 +27,7 @@ interface Notification {
 export function Notifications() {
   const navigate = useNavigate();
   const theme = useAppTheme();
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
   // Admin bildirimlerini al
   const adminNotifications = JSON.parse(localStorage.getItem('globalNotifications') || '[]');
@@ -174,6 +177,7 @@ export function Notifications() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
+                    onClick={() => setSelectedNotification(notification)}
                     className="bg-white rounded-2xl p-4 shadow-md active:scale-98 transition-transform cursor-pointer relative"
                   >
                     {/* Unread indicator */}
@@ -223,6 +227,7 @@ export function Notifications() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
+                    onClick={() => setSelectedNotification(notification)}
                     className="bg-white rounded-2xl p-4 shadow-sm active:scale-98 transition-transform cursor-pointer opacity-70 hover:opacity-100"
                   >
                     <div className="flex items-start space-x-4">
@@ -253,6 +258,53 @@ export function Notifications() {
           </div>
         </div>
       </div>
+
+      {/* Detail Modal */}
+      <AnimatePresence>
+        {selectedNotification && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-end"
+            onClick={() => setSelectedNotification(null)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full bg-white rounded-t-3xl p-6 shadow-2xl"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${getIconColor(selectedNotification.type)}`}>
+                  {(() => { const Icon = getIcon(selectedNotification.type); return <Icon className={`w-7 h-7 ${getIconTextColor(selectedNotification.type)}`} />; })()}
+                </div>
+                <button
+                  onClick={() => setSelectedNotification(null)}
+                  className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              <h2 className="text-xl font-bold text-[#121212] mb-2">{selectedNotification.title}</h2>
+              <p className="text-gray-600 leading-relaxed mb-4">{selectedNotification.message}</p>
+              <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
+                <Clock className="w-4 h-4" />
+                <span>{selectedNotification.time}</span>
+              </div>
+              <button
+                onClick={() => setSelectedNotification(null)}
+                className="w-full py-3 rounded-2xl font-bold text-[#121212]"
+                style={{ backgroundColor: theme.primary }}
+              >
+                Tamam
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

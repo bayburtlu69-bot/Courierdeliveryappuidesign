@@ -382,14 +382,7 @@ export function ActiveOrder() {
       {/* Header */}
       <div className="bg-[#121212] text-white p-6">
         <div className="flex items-center justify-between mb-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/dashboard')}
-            className="text-[#FFD600] hover:text-[#FFD600]/80"
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </Button>
+          <div className="w-10" />
           <div className="text-center flex-1">
             <p className="text-sm text-gray-400">Sipariş No</p>
             <p className="font-bold text-lg">{order.id}</p>

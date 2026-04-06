@@ -12,6 +12,7 @@ import {
   AlertCircle,
   BookOpen,
   CheckCircle,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -269,6 +270,18 @@ export function Support() {
     }
   };
 
+  const handleClearChat = () => {
+    localStorage.removeItem(CHAT_STORAGE_KEY);
+    localStorage.removeItem(CHAT_STATE_KEY);
+    setMessages([{
+      id: '1',
+      text: 'Merhaba! Size nasıl yardımcı olabilirim?',
+      sender: 'support',
+      time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+    }]);
+    setViewMode('menu');
+  };
+
   const handleBackFromChat = () => {
     // Don't clear chat - just go back to menu, chat persists
     setViewMode('menu');
@@ -299,9 +312,20 @@ export function Support() {
           </Button>
           <h1 className="text-lg font-bold text-[#121212]">Yardım & Destek</h1>
           {viewMode === 'chat' ? (
-            <div className="flex items-center gap-1 bg-black/10 rounded-full px-2 py-1">
-              <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />
-              <span className="text-xs font-bold text-[#121212]">Canlı</span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-black/10 rounded-full px-2 py-1">
+                <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />
+                <span className="text-xs font-bold text-[#121212]">Canlı</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleClearChat}
+                title="Sohbeti sil"
+                className="w-8 h-8 rounded-full bg-black/10 hover:bg-red-500/20"
+              >
+                <Trash2 className="w-4 h-4 text-[#121212]" />
+              </Button>
             </div>
           ) : (
             <div className="w-16" />
