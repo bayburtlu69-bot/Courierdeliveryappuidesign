@@ -34,8 +34,8 @@ interface PreQuestion {
   isTextInput?: boolean;
 }
 
-const CHAT_STORAGE_KEY = 'baymoto_support_chat';
-const CHAT_STATE_KEY = 'baymoto_support_state';
+const CHAT_STORAGE_KEY = 'jetgo_support_chat';
+const CHAT_STATE_KEY = 'jetgo_support_state';
 
 export function Support() {
   const navigate = useNavigate();
@@ -147,14 +147,20 @@ export function Support() {
     {
       icon: MessageCircle,
       title: 'Canlı Destek',
-      subtitle: viewMode === 'chat' ? '✅ Aktif sohbet devam ediyor' : 'Destek ekibimizle sohbet edin',
+      subtitle: (() => {
+        const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+        const hasSaved = saved && JSON.parse(saved).length > 1;
+        return hasSaved ? '✅ Aktif sohbet devam ediyor' : 'Destek ekibimizle sohbet edin';
+      })(),
       color: '',
       style: { backgroundColor: theme.primary },
       iconColor: 'text-[#121212]',
-      badge: viewMode === 'chat' ? messages.length - 1 : 0,
+      badge: messages.length > 1 ? messages.length - 1 : 0,
       action: () => {
-        if (viewMode === 'chat') {
-          // Resume existing chat
+        // Eğer localStorage'da kayıtlı chat varsa direkt chat'e git
+        const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+        const hasSaved = saved && JSON.parse(saved).length > 1;
+        if (hasSaved) {
           setViewMode('chat');
         } else {
           setViewMode('preQuestions');
@@ -186,12 +192,12 @@ export function Support() {
     {
       icon: Mail,
       title: 'E-posta Gönderin',
-      subtitle: 'destek@baymoto.com',
+      subtitle: 'destek@jetgo.com',
       color: 'bg-purple-100',
       style: {},
       iconColor: 'text-purple-600',
       badge: 0,
-      action: () => window.open('mailto:destek@baymoto.com'),
+      action: () => window.open('mailto:destek@jetgo.com'),
     },
   ];
 
@@ -203,6 +209,15 @@ export function Support() {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setTextInput('');
     } else {
+      // Eğer chat zaten varsa (localStorage'da) sadece devam et, mesaj ekleme
+      const existingSaved = localStorage.getItem(CHAT_STORAGE_KEY);
+      const existingParsed = existingSaved ? JSON.parse(existingSaved) : [];
+      if (existingParsed.length > 1) {
+        // Chat zaten var, sadece chat'e geç
+        setViewMode('chat');
+        return;
+      }
+
       const summaryMessage = `📋 Destek Talebi Özeti:\n━━━━━━━━━━━━━━━━\n${Object.entries(newAnswers)
         .map(([index, ans]) => `${preQuestions[parseInt(index)].question}\n→ ${ans}`)
         .join('\n\n')}`.trim();
@@ -228,9 +243,7 @@ export function Support() {
         },
       ];
 
-      // Merge with existing messages if any
-      const existingMessages = messages.filter((m) => m.id !== '1');
-      setMessages(existingMessages.length > 0 ? [...messages, ...initMessages.slice(1)] : initMessages);
+      setMessages(initMessages);
       setViewMode('chat');
     }
   };
@@ -271,6 +284,19 @@ export function Support() {
   };
 
   const handleClearChat = () => {
+    if (!window.confirm('Sohbeti silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) return;
+
+    // Çalışan paneline bildirim gönder
+    const notifications = JSON.parse(localStorage.getItem('empChatNotifications') || '[]');
+    notifications.unshift({
+      id: Date.now(),
+      text: 'Bir kurye destek sohbetini sonlandırdı.',
+      time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+      read: false,
+    });
+    localStorage.setItem('empChatNotifications', JSON.stringify(notifications.slice(0, 50)));
+
+    // Sohbeti komple temizle
     localStorage.removeItem(CHAT_STORAGE_KEY);
     localStorage.removeItem(CHAT_STATE_KEY);
     setMessages([{
@@ -279,7 +305,10 @@ export function Support() {
       sender: 'support',
       time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
     }]);
+    setAnswers({});
+    setCurrentQuestionIndex(0);
     setViewMode('menu');
+    toast.success('Sohbet silindi. Destek ekibine bildirim gönderildi.');
   };
 
   const handleBackFromChat = () => {
@@ -391,14 +420,14 @@ export function Support() {
                   <h3 className="font-bold text-lg">Acil Durum</h3>
                 </div>
                 <p className="text-white/90 text-sm mb-3">
-                  Acil durumlar için 7/24 ulaşabileceğiniz destek hattımız
+                  Kaza, yaralanma veya tehlike anında direkt 112'yi ara
                 </p>
                 <Button
-                  onClick={() => window.open('tel:08501234567')}
+                  onClick={() => window.open('tel:112')}
                   className="w-full bg-white text-red-600 hover:bg-white/90 font-bold"
                 >
                   <Phone className="mr-2 w-5 h-5" />
-                  Acil Destek Hattını Ara
+                  112 — Acil Yardım Çağır
                 </Button>
               </motion.div>
             </motion.div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { ArrowLeft, DollarSign, TrendingUp, Calendar, Download, Award, Target, Gift, Star, Zap } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import { toast } from 'sonner';
 import {
   LineChart,
   Line,
@@ -66,6 +67,61 @@ export function Earnings() {
   const currentStats = stats[selectedPeriod];
   const chartData = selectedPeriod === 'daily' ? dailyData : selectedPeriod === 'weekly' ? weeklyData : monthlyData;
 
+  const handleDownloadPDF = () => {
+    const courierName = localStorage.getItem('courierName') || 'Kurye';
+    const today = new Date();
+    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const fmt = (d: Date) => d.toLocaleDateString('tr-TR');
+
+    const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/>
+<title>Jetgo Haftalık Kazanç Raporu</title>
+<style>
+  body{font-family:Arial,sans-serif;padding:32px;color:#121212;background:#fff;}
+  .header{background:#121212;color:#FFD600;padding:20px 24px;border-radius:12px;margin-bottom:24px;}
+  .header h1{margin:0;font-size:22px;}
+  .header p{margin:4px 0 0;font-size:13px;color:#ccc;}
+  .card{background:#f9f9f9;border:1px solid #eee;border-radius:10px;padding:16px 20px;margin-bottom:16px;}
+  .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;}
+  .row:last-child{border-bottom:none;}
+  .label{color:#666;font-size:14px;}
+  .value{font-weight:bold;font-size:14px;}
+  .total{font-size:28px;font-weight:900;color:#121212;text-align:center;margin:20px 0;}
+  .badge{display:inline-block;background:#FFD600;color:#121212;border-radius:20px;padding:4px 14px;font-weight:bold;font-size:13px;}
+  table{width:100%;border-collapse:collapse;margin-top:8px;}
+  th{background:#121212;color:#FFD600;padding:8px 12px;text-align:left;font-size:13px;}
+  td{padding:8px 12px;font-size:13px;border-bottom:1px solid #eee;}
+  tr:nth-child(even) td{background:#f5f5f5;}
+  .footer{text-align:center;margin-top:32px;font-size:11px;color:#999;}
+</style></head><body>
+<div class="header">
+  <h1>🛵 Jetgo — Haftalık Kazanç Raporu</h1>
+  <p>${courierName} &nbsp;|&nbsp; ${fmt(weekAgo)} – ${fmt(today)}</p>
+</div>
+<div class="total">₺${stats.weekly.total.toFixed(2)}</div>
+<div style="text-align:center;margin-bottom:20px"><span class="badge">Haftalık Toplam</span></div>
+<div class="card">
+  <div class="row"><span class="label">Toplam Teslimat</span><span class="value">${stats.weekly.deliveries}</span></div>
+  <div class="row"><span class="label">Bonus Kazancı</span><span class="value">₺${stats.weekly.bonus}</span></div>
+  <div class="row"><span class="label">Teslimat Başı Ortalama</span><span class="value">₺${stats.weekly.average.toFixed(2)}</span></div>
+  <div class="row"><span class="label">Puan Ortalaması</span><span class="value">⭐ 4.8 / 5.0</span></div>
+</div>
+<table>
+  <tr><th>Gün</th><th>Kazanç</th></tr>
+  ${dailyData.map(d => `<tr><td>${d.name}</td><td>₺${d.earnings}</td></tr>`).join('')}
+</table>
+<div class="footer">Bu rapor Jetgo sistemi tarafından otomatik oluşturulmuştur. ${fmt(today)}</div>
+</body></html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `jetgo-kazanc-${fmt(today).replace(/\./g, '-')}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Kazanç raporu indirildi! 📄');
+  };
+
   // Bonus tiers from admin settings
   const bonusEnabled = localStorage.getItem('bonusEnabled') !== 'false';
   const bonusTiers: any[] = JSON.parse(localStorage.getItem('bonusTiers') || JSON.stringify([
@@ -85,7 +141,7 @@ export function Earnings() {
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="relative z-10 px-4 pt-4 pb-6" style={{ backgroundColor: theme.primary }}>
+      <div className="relative z-10 px-4 pt-4 pb-4" style={{ backgroundColor: theme.primary }}>
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"
@@ -99,6 +155,7 @@ export function Earnings() {
           <Button
             variant="ghost"
             size="icon"
+            onClick={handleDownloadPDF}
             className="w-10 h-10 rounded-full bg-black/10 hover:bg-black/20"
           >
             <Download className="w-5 h-5 text-[#121212]" />
@@ -107,49 +164,35 @@ export function Earnings() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto -mt-12 px-4 space-y-6 pb-6">
+      <div className="flex-1 overflow-y-auto -mt-2 px-4 space-y-4 pb-6">
         {/* Total Earnings Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-[#121212] to-[#2a2a2a] rounded-3xl p-8 shadow-2xl relative overflow-hidden"
+          className="bg-gradient-to-br from-[#121212] to-[#2a2a2a] rounded-2xl p-5 shadow-2xl relative overflow-hidden"
         >
-          <div className="absolute inset-0 pointer-events-none">
-            {[...Array(6)].map((_, i) => (
-              <motion.div
-                key={i}
-                animate={{ y: ['0%', '110%'], rotate: [0, 360] }}
-                transition={{ duration: 8 + i * 1.2, repeat: Infinity, delay: i * 0.8, ease: 'linear' }}
-                className="absolute text-5xl opacity-10"
-                style={{ left: `${10 + i * 15}%`, top: '-10%' }}
-              >
-                💰
-              </motion.div>
-            ))}
-          </div>
-
           <div className="relative z-10">
-            <div className="flex items-center justify-center mb-5">
+            <div className="flex items-center justify-center mb-2">
               <motion.div
-                animate={{ y: [0, -12, 0], rotate: [0, 8, -8, 0] }}
+                animate={{ y: [0, -10, 0], rotate: [0, 8, -8, 0] }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                className="text-7xl"
+                className="text-5xl"
               >
                 💸
               </motion.div>
             </div>
 
-            <p className="text-[#FFD600] text-center font-semibold mb-2">
+            <p className="text-[#FFD600] text-center font-semibold text-sm mb-1">
               {selectedPeriod === 'daily' ? 'Günlük' : selectedPeriod === 'weekly' ? 'Haftalık' : 'Aylık'} Toplam
             </p>
-            <h2 className="text-5xl font-bold text-white text-center mb-2">
+            <h2 className="text-4xl font-bold text-white text-center mb-1">
               ₺{currentStats.total.toFixed(2)}
             </h2>
-            <p className="text-white/60 text-center text-sm">
+            <p className="text-white/60 text-center text-xs">
               {currentStats.deliveries} teslimat tamamlandı
             </p>
 
-            <div className="grid grid-cols-3 gap-3 mt-6">
+            <div className="grid grid-cols-3 gap-2 mt-4">
               {[
                 { label: 'Bonus', value: `₺${currentStats.bonus}`, icon: Gift },
                 { label: 'Teslimat', value: currentStats.deliveries, icon: Target },
@@ -157,9 +200,9 @@ export function Earnings() {
               ].map((item, i) => {
                 const Icon = item.icon;
                 return (
-                  <div key={i} className="bg-white/10 rounded-2xl p-3 text-center">
-                    <Icon className="w-5 h-5 text-[#FFD600] mx-auto mb-1" />
-                    <p className="text-xl font-bold text-white">{item.value}</p>
+                  <div key={i} className="bg-white/10 rounded-xl p-2 text-center">
+                    <Icon className="w-4 h-4 text-[#FFD600] mx-auto mb-1" />
+                    <p className="text-lg font-bold text-white">{item.value}</p>
                     <p className="text-xs text-white/60">{item.label}</p>
                   </div>
                 );

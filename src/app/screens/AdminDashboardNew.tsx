@@ -6,6 +6,7 @@ import {
   FileText,
   Store,
   Check,
+  Search,
   X,
   MapPin,
   Phone,
@@ -114,7 +115,7 @@ export function AdminDashboardNew() {
               <ShoppingBag className="w-8 h-8 text-[#121212]" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-[#FFD600]">Baymoto</h1>
+              <h1 className="text-2xl font-bold text-[#FFD600]">Jetgo</h1>
               <p className="text-xs text-white/50">Yönetim Paneli</p>
             </div>
           </div>
@@ -128,7 +129,7 @@ export function AdminDashboardNew() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-bold text-white truncate">
-                {localStorage.getItem('adminEmail') || 'admin@baymoto.com'}
+                {localStorage.getItem('adminEmail') || 'admin@jetgo.com'}
               </p>
               <p className="text-xs text-[#FFD600]">Süper Admin</p>
             </div>
@@ -241,22 +242,38 @@ function DashboardTab() {
   const shops = JSON.parse(localStorage.getItem('shops') || '[]');
   const pendingApps = applications.filter((a: any) => a.status === 'pending').length;
 
+  // Gerçek veriler
+  const allOrders = JSON.parse(localStorage.getItem('jetgo_orders') || '[]');
+  const allCouriers = JSON.parse(localStorage.getItem('jetgo_couriers') || '[]');
+  const activeOrders = allOrders.filter((o: any) => ['accepted', 'picked'].includes(o.status));
+  const deliveredOrders = allOrders.filter((o: any) => o.status === 'delivered');
+  const dailyRevenue = deliveredOrders.slice(-20).reduce((s: number, o: any) => s + (o.totalPrice || 0), 0);
+
   const stats = [
-    { label: 'Toplam Kurye', value: '127', icon: Users, gradient: 'from-blue-500 to-blue-700', trend: '+12%' },
-    { label: 'Aktif Sipariş', value: '43', icon: Package, gradient: 'from-green-500 to-green-700', trend: '+8%' },
+    { label: 'Toplam Kurye', value: String(allCouriers.filter((c: any) => c.status === 'active').length || 127), icon: Users, gradient: 'from-blue-500 to-blue-700', trend: '+12%' },
+    { label: 'Aktif Sipariş', value: String(activeOrders.length || 43), icon: Package, gradient: 'from-green-500 to-green-700', trend: '+8%' },
     { label: 'Mağazalar', value: String(shops.length || 89), icon: Store, gradient: 'from-purple-500 to-purple-700', trend: '+5%' },
-    { label: 'Günlük Ciro', value: '₺45,678', icon: DollarSign, gradient: 'from-[#FFD600] to-[#FFC107]', trend: '+23%' },
+    { label: 'Günlük Ciro', value: `₺${dailyRevenue > 0 ? dailyRevenue.toLocaleString('tr-TR') : '45,678'}`, icon: DollarSign, gradient: 'from-[#FFD600] to-[#FFC107]', trend: '+23%' },
     { label: 'Bekleyen Başvuru', value: String(pendingApps || 3), icon: FileText, gradient: 'from-orange-500 to-orange-700', trend: '+2' },
-    { label: 'Başarı Oranı', value: '98.5%', icon: TrendingUp, gradient: 'from-teal-500 to-teal-700', trend: '+1.2%' },
+    { label: 'Başarı Oranı', value: `${deliveredOrders.length > 0 ? ((deliveredOrders.length / Math.max(allOrders.length, 1)) * 100).toFixed(1) : '98.5'}%`, icon: TrendingUp, gradient: 'from-teal-500 to-teal-700', trend: '+1.2%' },
   ];
 
-  const recentActivities = [
-    { icon: CheckCircle, text: 'Ahmet Yılmaz başvurusu onaylandı', time: '5 dk önce', color: 'text-green-600' },
-    { icon: Package, text: 'Test siparişi #ORD-9821 oluşturuldu', time: '12 dk önce', color: 'text-blue-600' },
-    { icon: Store, text: 'Pizza World mağazası eklendi', time: '1 saat önce', color: 'text-orange-600' },
-    { icon: Bell, text: 'Haftalık bonus bildirimi gönderildi', time: '2 saat önce', color: 'text-purple-600' },
-    { icon: XCircle, text: 'Mehmet Kaya başvurusu reddedildi', time: '3 saat önce', color: 'text-red-600' },
-  ];
+  // Son aktiviteler: activityLogs'dan gerçek veri
+  const activityLogs = JSON.parse(localStorage.getItem('activityLogs') || '[]').slice(0, 5);
+  const recentActivities = activityLogs.length > 0
+    ? activityLogs.map((log: any) => ({
+        icon: log.type === 'success' ? CheckCircle : log.type === 'warning' ? XCircle : Package,
+        text: log.description,
+        time: new Date(log.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+        color: log.type === 'success' ? 'text-green-600' : log.type === 'warning' ? 'text-red-600' : 'text-blue-600',
+      }))
+    : [
+        { icon: CheckCircle, text: 'Ahmet Yılmaz başvurusu onaylandı', time: '5 dk önce', color: 'text-green-600' },
+        { icon: Package, text: 'Yeni sipariş #SIP-10001 oluşturuldu', time: '12 dk önce', color: 'text-blue-600' },
+        { icon: Store, text: 'Pizza World mağazası eklendi', time: '1 saat önce', color: 'text-orange-600' },
+        { icon: Bell, text: 'Haftalık bonus bildirimi gönderildi', time: '2 saat önce', color: 'text-purple-600' },
+        { icon: XCircle, text: 'Mehmet Kaya başvurusu reddedildi', time: '3 saat önce', color: 'text-red-600' },
+      ];
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
@@ -449,7 +466,7 @@ function TrackingTab() {
       {/* Courier List */}
       <div className="bg-white rounded-2xl shadow-lg p-6">
         <h3 className="text-lg font-bold text-[#121212] mb-4">Kurye Durumları</h3>
-        <div className="space-y-3">
+        <div className="space-y-3 overflow-y-auto" style={{ maxHeight: 320 }}>
           {mockCouriers.map((courier) => (
             <div key={courier.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
               <div
@@ -733,66 +750,178 @@ function ApplicationsTab() {
 function CouriersTab() {
   const applications = JSON.parse(localStorage.getItem('courierApplications') || '[]');
   const approvedCouriers = applications.filter((a: any) => a.status === 'approved');
+  const [search, setSearch] = useState('');
+  const [suspended, setSuspended] = useState<number[]>([]);
+  const [reassignModal, setReassignModal] = useState<any>(null);
+  const [reassignTarget, setReassignTarget] = useState<number | null>(null);
 
-  const mockCouriers = [
-    { id: 1, name: 'Ahmet Yılmaz', phone: '0555 111 1111', vehicle: 'Motosiklet', rating: 4.9, deliveries: 312, online: true },
-    { id: 2, name: 'Fatma Demir', phone: '0555 222 2222', vehicle: 'Bisiklet', rating: 4.7, deliveries: 187, online: false },
-    { id: 3, name: 'Mehmet Kaya', phone: '0555 333 3333', vehicle: 'Motosiklet', rating: 4.8, deliveries: 245, online: true },
+  const allCouriers = [
+    { id: 1, courierId: 'KRY-001', name: 'Ahmet Yılmaz', phone: '0555 111 1111', vehicle: 'Motosiklet', rating: 4.9, deliveries: 312, online: true,  activeOrder: '#SIP-1234', city: 'İstanbul' },
+    { id: 2, courierId: 'KRY-002', name: 'Fatma Demir',  phone: '0555 222 2222', vehicle: 'Bisiklet',   rating: 4.7, deliveries: 187, online: false, activeOrder: null,       city: 'Ankara' },
+    { id: 3, courierId: 'KRY-003', name: 'Mehmet Kaya',  phone: '0555 333 3333', vehicle: 'Motosiklet', rating: 4.8, deliveries: 245, online: true,  activeOrder: '#SIP-1235', city: 'İzmir' },
+    { id: 4, courierId: 'KRY-004', name: 'Ayşe Öz',      phone: '0555 444 4444', vehicle: 'Motosiklet', rating: 4.6, deliveries: 198, online: true,  activeOrder: null,       city: 'Bursa' },
+    { id: 5, courierId: 'KRY-005', name: 'Can Bak',      phone: '0555 555 5555', vehicle: 'Bisiklet',   rating: 4.5, deliveries: 120, online: false, activeOrder: null,       city: 'Antalya' },
+    { id: 6, courierId: 'KRY-006', name: 'Zeynep Ak',    phone: '0555 666 6666', vehicle: 'Motosiklet', rating: 4.4, deliveries: 88,  online: true,  activeOrder: null,       city: 'Adana' },
+    { id: 7, courierId: 'KRY-007', name: 'Burak Ar',     phone: '0555 777 7777', vehicle: 'Bisiklet',   rating: 4.3, deliveries: 55,  online: false, activeOrder: null,       city: 'Trabzon' },
     ...approvedCouriers.map((c: any, i: number) => ({
-      id: 100 + i, name: c.fullName, phone: c.phone, vehicle: c.vehicleType, rating: 4.5, deliveries: 0, online: false,
+      id: 100 + i, courierId: `KRY-${String(100 + i).padStart(3, '0')}`,
+      name: c.fullName, phone: c.phone, vehicle: c.vehicleType, rating: 4.5, deliveries: 0, online: false, activeOrder: null, city: c.city || '—',
     })),
   ];
 
+  const filtered = allCouriers.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.courierId.toLowerCase().includes(search.toLowerCase()) ||
+    c.phone.includes(search)
+  );
+
+  const availableCouriers = allCouriers.filter((c) => c.online && !c.activeOrder && !suspended.includes(c.id));
+
+  const handleSuspend = (id: number) => {
+    setSuspended((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+    toast.success(suspended.includes(id) ? 'Kurye aktifleştirildi!' : 'Kurye askıya alındı!');
+  };
+
+  const handleReassign = () => {
+    if (!reassignTarget) { toast.error('Lütfen bir kurye seçin'); return; }
+    const from = reassignModal;
+    const to = allCouriers.find((c) => c.id === reassignTarget);
+    toast.success(`${from.activeOrder} siparişi ${to?.name}'e atandı!`);
+    setReassignModal(null);
+    setReassignTarget(null);
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-[#121212]">Toplam {mockCouriers.length} Kurye</h3>
-        <div className="flex items-center gap-2 bg-green-50 border border-green-200 px-3 py-2 rounded-xl">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="ID, isim veya telefon ara..."
+            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FFD600]"
+          />
+        </div>
+        <div className="flex items-center gap-2 bg-green-50 border border-green-200 px-3 py-2 rounded-xl whitespace-nowrap">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-sm font-semibold text-green-700">{mockCouriers.filter((c) => c.online).length} Çevrimiçi</span>
+          <span className="text-sm font-semibold text-green-700">{allCouriers.filter((c) => c.online).length} Çevrimiçi</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {mockCouriers.map((courier) => (
-          <motion.div
-            key={courier.id}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${courier.online ? 'bg-green-100' : 'bg-gray-100'}`}>
-                  <User className={`w-6 h-6 ${courier.online ? 'text-green-600' : 'text-gray-400'}`} />
+      <div className="grid grid-cols-2 gap-4 overflow-y-auto" style={{ maxHeight: 520 }}>
+        {filtered.map((courier) => {
+          const isSusp = suspended.includes(courier.id);
+          return (
+            <motion.div
+              key={courier.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className={`bg-white rounded-2xl p-4 shadow-lg transition-all border-2 ${isSusp ? 'border-red-200 opacity-60' : 'border-transparent'}`}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${courier.online && !isSusp ? 'bg-green-100' : 'bg-gray-100'}`}>
+                    <User className={`w-5 h-5 ${courier.online && !isSusp ? 'text-green-600' : 'text-gray-400'}`} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-[#121212] text-sm">{courier.name}</h4>
+                    <p className="text-xs text-gray-400">{courier.courierId} · {courier.vehicle}</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-bold text-[#121212]">{courier.name}</h4>
-                  <p className="text-xs text-gray-500">{courier.vehicle}</p>
+                <span className={`w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0 ${isSusp ? 'bg-red-400' : courier.online ? 'bg-green-500' : 'bg-gray-300'}`} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="bg-gray-50 rounded-lg p-2 text-center">
+                  <p className="text-lg font-bold text-[#121212]">{courier.deliveries}</p>
+                  <p className="text-xs text-gray-500">Teslimat</p>
+                </div>
+                <div className="bg-yellow-50 rounded-lg p-2 text-center">
+                  <p className="text-lg font-bold text-[#121212]">⭐{courier.rating}</p>
+                  <p className="text-xs text-gray-500">Puan</p>
                 </div>
               </div>
-              <span className={`w-3 h-3 rounded-full mt-1 ${courier.online ? 'bg-green-500' : 'bg-gray-300'}`} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-gray-50 rounded-xl p-3 text-center">
-                <p className="text-2xl font-bold text-[#121212]">{courier.deliveries}</p>
-                <p className="text-xs text-gray-500">Teslimat</p>
+
+              {courier.activeOrder && (
+                <div className="mb-2 px-2 py-1.5 bg-blue-50 rounded-lg flex items-center justify-between">
+                  <span className="text-xs text-blue-600 font-semibold">📦 {courier.activeOrder}</span>
+                  <button
+                    onClick={() => setReassignModal(courier)}
+                    className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-lg hover:bg-blue-700"
+                  >Ata</button>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleSuspend(courier.id)}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${isSusp ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
+                >
+                  {isSusp ? '✓ Aktifleştir' : '⏸ Askıya Al'}
+                </button>
               </div>
-              <div className="bg-yellow-50 rounded-xl p-3 text-center">
-                <p className="text-2xl font-bold text-[#121212]">⭐{courier.rating}</p>
-                <p className="text-xs text-gray-500">Puan</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 mt-3 text-sm text-gray-500">
-              <Phone className="w-4 h-4" />
-              <span>{courier.phone}</span>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div className="col-span-2 text-center py-10 text-gray-400">
+            <User className="w-10 h-10 mx-auto mb-2 opacity-30" />
+            <p>Kurye bulunamadı</p>
+          </div>
+        )}
       </div>
+
+      {/* Reassign Modal */}
+      <AnimatePresence>
+        {reassignModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6"
+            onClick={() => setReassignModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl"
+            >
+              <h3 className="font-bold text-lg text-[#121212] mb-1">Sipariş Yeniden Ata</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                <span className="font-semibold text-blue-600">{reassignModal.activeOrder}</span> siparişini hangi kuryeye aktarmak istersiniz?
+              </p>
+              <div className="space-y-2 max-h-48 overflow-y-auto mb-4">
+                {availableCouriers.filter((c) => c.id !== reassignModal.id).map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setReassignTarget(c.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${reassignTarget === c.id ? 'border-[#FFD600] bg-yellow-50' : 'border-gray-100 hover:border-gray-200'}`}
+                  >
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                      <User className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-sm text-[#121212]">{c.name}</p>
+                      <p className="text-xs text-gray-400">{c.city} · {c.courierId}</p>
+                    </div>
+                    {reassignTarget === c.id && <span className="ml-auto text-[#FFD600] font-bold">✓</span>}
+                  </button>
+                ))}
+                {availableCouriers.filter((c) => c.id !== reassignModal.id).length === 0 && (
+                  <p className="text-center text-sm text-gray-400 py-4">Müsait kurye yok</p>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setReassignModal(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold">İptal</button>
+                <button onClick={handleReassign} className="flex-1 py-2.5 rounded-xl bg-[#FFD600] text-[#121212] text-sm font-bold">Ata</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
+
 
 // ─── TAB: MAĞAZALAR ───────────────────────────────────────────────
 function ShopsTab() {
@@ -841,7 +970,7 @@ function ShopsTab() {
                   { key: 'category', label: 'Kategori', placeholder: 'Restoran, Market...' },
                   { key: 'address', label: 'Adres *', placeholder: 'Mağaza adresi...' },
                   { key: 'phone', label: 'Telefon', placeholder: '0555 000 0000' },
-                  { key: 'loginEmail', label: 'Giriş E-postası', placeholder: 'dukkan@baymoto.com' },
+                  { key: 'loginEmail', label: 'Giriş E-postası', placeholder: 'dukkan@jetgo.com' },
                 ].map((field) => (
                   <div key={field.key}>
                     <Label className="mb-2 block font-semibold">{field.label}</Label>
@@ -997,7 +1126,7 @@ function EmployeesTab() {
                 </div>
                 <div>
                   <Label className="mb-2 block font-semibold">E-posta *</Label>
-                  <Input value={newEmployee.email} onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })} type="email" placeholder="destek@baymoto.com" className="h-12" />
+                  <Input value={newEmployee.email} onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })} type="email" placeholder="destek@jetgo.com" className="h-12" />
                 </div>
                 <div>
                   <Label className="mb-2 block font-semibold">Şifre *</Label>
@@ -1088,59 +1217,109 @@ function EmployeesTab() {
 
 // ─── TAB: TEST SİPARİŞİ ───────────────────────────────────────────
 function TestOrdersTab() {
-  const [shopName, setShopName] = useState('Test Restoran');
-  const [pickupAddr, setPickupAddr] = useState('Kadıköy Moda Caddesi No:45');
+  const [shopName, setShopName] = useState('Pizza World');
+  const [shopAddr, setShopAddr] = useState('Kadıköy Moda Caddesi No:45');
+  const [shopPhone, setShopPhone] = useState('02165551234');
+  const [custName, setCustName] = useState('Ali Veli');
   const [deliveryAddr, setDeliveryAddr] = useState('Beşiktaş Barbaros Bulvarı No:88');
-  const [price, setPrice] = useState('85.50');
-  const [distance, setDistance] = useState('3.2 km');
-  const [createdOrders, setCreatedOrders] = useState<any[]>(() =>
-    JSON.parse(localStorage.getItem('activeOrders') || '[]').filter((o: any) => o.source === 'test')
+  const [custPhone, setCustPhone] = useState('5559871234');
+  const [price, setPrice] = useState('120');
+  const [distance, setDistance] = useState('2.3 km');
+  const [payMethod, setPayMethod] = useState<'cash'|'card'|'online'>('cash');
+  const [notes, setNotes] = useState('');
+  const [allOrders, setAllOrders] = useState<any[]>(() =>
+    JSON.parse(localStorage.getItem('jetgo_orders') || '[]')
   );
 
   const handleCreateOrder = () => {
-    const order = {
-      id: `SIP-${Date.now().toString().slice(-5)}`,
-      shopName, pickupAddress: pickupAddr, deliveryAddress: deliveryAddr,
-      price: parseFloat(price) || 50, distance, estimatedTime: '20 dk',
-      status: 'new', source: 'test', createdAt: new Date().toISOString(),
-    };
-    const existing = JSON.parse(localStorage.getItem('activeOrders') || '[]');
-    localStorage.setItem('activeOrders', JSON.stringify([...existing, order]));
-    setCreatedOrders([...createdOrders, order]);
-    toast.success(`Test siparişi oluşturuldu: ${order.id}`);
+    if (!shopName || !deliveryAddr) { toast.error('Mağaza adı ve teslimat adresi zorunludur!'); return; }
+    const { orderStore } = require('../utils/auth');
+    const order = orderStore.create({
+      shopId: Date.now(),
+      shopName, shopAddress: shopAddr, shopPhone,
+      customerName: custName, customerAddress: deliveryAddr, customerPhone: custPhone,
+      items: [{ name: 'Sipariş', quantity: 1, price: parseFloat(price) }],
+      totalPrice: parseFloat(price) || 100,
+      courierEarning: Math.round(parseFloat(price) * 0.3),
+      paymentMethod: payMethod,
+      distance, notes,
+    });
+    const updated = JSON.parse(localStorage.getItem('jetgo_orders') || '[]');
+    setAllOrders(updated);
+    toast.success(`✅ Gerçek sipariş oluşturuldu: ${order.id} — Kurye uygulamasına düşecek!`);
   };
+
+  const handleDeleteOrder = (id: string) => {
+    const updated = allOrders.filter((o: any) => o.id !== id);
+    setAllOrders(updated);
+    localStorage.setItem('jetgo_orders', JSON.stringify(updated));
+    const activeOrders = JSON.parse(localStorage.getItem('activeOrders') || '[]').filter((o: any) => o.id !== id);
+    localStorage.setItem('activeOrders', JSON.stringify(activeOrders));
+    toast.success('Sipariş silindi!');
+  };
+
+  const statusColor = (s: string) =>
+    s === 'delivered' ? 'bg-green-100 text-green-700' :
+    s === 'accepted' ? 'bg-blue-100 text-blue-700' :
+    s === 'new' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600';
+  const statusLabel = (s: string) =>
+    s === 'delivered' ? '✅ Teslim Edildi' : s === 'accepted' ? '🚴 Yolda' : s === 'new' ? '🆕 Yeni' : s;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6 max-w-2xl">
       <div className="bg-white rounded-2xl p-6 shadow-xl">
-        <h3 className="text-xl font-bold text-[#121212] mb-5 flex items-center gap-2">
-          <Zap className="w-6 h-6 text-[#FFD600]" /> Test Siparişi Oluştur
+        <h3 className="text-xl font-bold text-[#121212] mb-1 flex items-center gap-2">
+          <Zap className="w-6 h-6 text-[#FFD600]" /> Yeni Sipariş Oluştur
         </h3>
+        <p className="text-sm text-gray-500 mb-5">Oluşturulan sipariş kurye uygulamasına gerçek zamanlı düşer</p>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div><Label className="mb-2 block font-semibold">Mağaza Adı</Label><Input value={shopName} onChange={(e) => setShopName(e.target.value)} className="h-12" /></div>
-            <div><Label className="mb-2 block font-semibold">Sipariş Tutarı (₺)</Label><Input value={price} onChange={(e) => setPrice(e.target.value)} type="number" className="h-12" /></div>
+            <div><Label className="mb-2 block font-semibold">Mağaza Adı</Label><Input value={shopName} onChange={(e) => setShopName(e.target.value)} className="h-11" /></div>
+            <div><Label className="mb-2 block font-semibold">Mağaza Telefonu</Label><Input value={shopPhone} onChange={(e) => setShopPhone(e.target.value)} className="h-11" /></div>
           </div>
-          <div><Label className="mb-2 block font-semibold">Alım Adresi</Label><Input value={pickupAddr} onChange={(e) => setPickupAddr(e.target.value)} className="h-12" /></div>
-          <div><Label className="mb-2 block font-semibold">Teslimat Adresi</Label><Input value={deliveryAddr} onChange={(e) => setDeliveryAddr(e.target.value)} className="h-12" /></div>
-          <div><Label className="mb-2 block font-semibold">Mesafe</Label><Input value={distance} onChange={(e) => setDistance(e.target.value)} className="h-12" /></div>
+          <div><Label className="mb-2 block font-semibold">Mağaza Adresi</Label><Input value={shopAddr} onChange={(e) => setShopAddr(e.target.value)} className="h-11" /></div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><Label className="mb-2 block font-semibold">Müşteri Adı</Label><Input value={custName} onChange={(e) => setCustName(e.target.value)} className="h-11" /></div>
+            <div><Label className="mb-2 block font-semibold">Müşteri Telefonu</Label><Input value={custPhone} onChange={(e) => setCustPhone(e.target.value)} className="h-11" /></div>
+          </div>
+          <div><Label className="mb-2 block font-semibold">Teslimat Adresi</Label><Input value={deliveryAddr} onChange={(e) => setDeliveryAddr(e.target.value)} className="h-11" /></div>
+          <div className="grid grid-cols-3 gap-4">
+            <div><Label className="mb-2 block font-semibold">Tutar (₺)</Label><Input value={price} onChange={(e) => setPrice(e.target.value)} type="number" className="h-11" /></div>
+            <div><Label className="mb-2 block font-semibold">Mesafe</Label><Input value={distance} onChange={(e) => setDistance(e.target.value)} className="h-11" /></div>
+            <div>
+              <Label className="mb-2 block font-semibold">Ödeme</Label>
+              <select value={payMethod} onChange={(e) => setPayMethod(e.target.value as any)} className="w-full h-11 border border-gray-200 rounded-lg px-3 text-sm">
+                <option value="cash">Nakit</option>
+                <option value="card">Kart</option>
+                <option value="online">Online</option>
+              </select>
+            </div>
+          </div>
+          <div><Label className="mb-2 block font-semibold">Notlar</Label><Input value={notes} onChange={(e) => setNotes(e.target.value)} className="h-11" placeholder="Opsiyonel" /></div>
           <Button onClick={handleCreateOrder} className="w-full h-14 bg-[#FFD600] hover:bg-[#FFD600]/90 text-[#121212] font-bold text-lg rounded-xl shadow-lg">
-            <Package className="mr-2 w-6 h-6" /> Test Siparişi Gönder
+            <Package className="mr-2 w-6 h-6" /> Siparişi Gönder (Kuryeye Düşür)
           </Button>
         </div>
       </div>
 
-      {createdOrders.length > 0 && (
+      {allOrders.length > 0 && (
         <div className="bg-white rounded-2xl p-6 shadow-xl">
-          <h3 className="text-lg font-bold text-[#121212] mb-4">Oluşturulan Test Siparişleri</h3>
-          <div className="space-y-3">
-            {createdOrders.map((order: any) => (
+          <h3 className="text-lg font-bold text-[#121212] mb-4">Tüm Siparişler ({allOrders.length})</h3>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {[...allOrders].reverse().map((order: any) => (
               <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <div>
-                  <p className="font-bold text-[#121212]">{order.id}</p>
-                  <p className="text-sm text-gray-500">{order.shopName} → {order.deliveryAddress}</p>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-bold text-[#121212] text-sm">{order.id}</p>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${statusColor(order.status)}`}>{statusLabel(order.status)}</span>
+                  </div>
+                  <p className="text-xs text-gray-500">{order.shopName} → {order.customerAddress}</p>
+                  {order.courierId && <p className="text-xs text-blue-600 mt-0.5">🛵 {order.courierId}</p>}
                 </div>
-                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-sm font-bold">₺{order.price}</span>
+                <div className="text-right ml-3">
+                  <p className="font-bold text-[#121212]">₺{order.totalPrice}</p>
+                  <button onClick={() => handleDeleteOrder(order.id)} className="text-xs text-red-400 hover:text-red-600 mt-1">Sil</button>
+                </div>
               </div>
             ))}
           </div>
@@ -1149,6 +1328,7 @@ function TestOrdersTab() {
     </motion.div>
   );
 }
+
 
 // ─── TAB: BİLDİRİMLER ────────────────────────────────────────────
 function NotificationsTab() {
@@ -1229,6 +1409,15 @@ function SettingsTab() {
     toast.success('Fiyatlandırma güncellendi!');
   };
 
+  // SMTP
+  const [smtpConfig, setSmtpConfig] = useState(() =>
+    JSON.parse(localStorage.getItem('jetgo_smtp') || '{"serviceId":"","templateId":"","publicKey":"","enabled":false}')
+  );
+  const saveSmtp = () => {
+    localStorage.setItem('jetgo_smtp', JSON.stringify(smtpConfig));
+    toast.success('E-posta ayarları kaydedildi!');
+  };
+
   // Bonus
   const [bonusEnabled, setBonusEnabled] = useState(() => localStorage.getItem('bonusEnabled') !== 'false');
   const [bonusTiers, setBonusTiers] = useState<any[]>(() =>
@@ -1290,6 +1479,7 @@ function SettingsTab() {
     { key: 'pricing', title: 'Fiyatlandırma Ayarları', icon: DollarSign, color: 'text-green-600', bg: 'bg-green-50' },
     { key: 'bonus', title: 'Haftalık Bonus Sistemi', icon: Gift, color: 'text-[#FFD600]', bg: 'bg-yellow-50' },
     { key: 'cities', title: 'İl Yönetimi', icon: Building, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { key: 'smtp', title: 'E-posta / SMTP Ayarları', icon: Bell, color: 'text-purple-600', bg: 'bg-purple-50' },
   ];
 
   return (
@@ -1465,12 +1655,63 @@ function SettingsTab() {
                       </div>
                     </div>
                   )}
+                  {/* SMTP */}
+                  {section.key === 'smtp' && (
+                    <div className="space-y-5">
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                        <p className="text-sm text-blue-800 font-semibold mb-1">📧 EmailJS ile e-posta doğrulaması</p>
+                        <p className="text-xs text-blue-600">
+                          Ücretsiz hesap için:{' '}
+                          <a href="https://www.emailjs.com" target="_blank" rel="noreferrer" className="underline font-bold">emailjs.com</a>
+                          {' '}— Aylık 200 e-posta ücretsiz. Template değişkenleri:{' '}
+                          <code className="bg-blue-100 px-1 rounded">to_email, to_name, verification_code</code>
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                        <div>
+                          <p className="font-semibold text-[#121212]">E-posta Doğrulaması</p>
+                          <p className="text-xs text-gray-500">Her girişte e-posta ile doğrulama kodu gönderilir</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSmtpConfig((prev: any) => ({ ...prev, enabled: !prev.enabled }))}
+                          className={`relative w-14 h-7 rounded-full transition-all shadow-md ${smtpConfig.enabled ? 'bg-[#FFD600]' : 'bg-gray-300'}`}
+                        >
+                          <motion.div
+                            animate={{ x: smtpConfig.enabled ? 28 : 0 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                            className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full shadow ${smtpConfig.enabled ? 'bg-[#121212]' : 'bg-white'}`}
+                          />
+                        </button>
+                      </div>
+
+                      <div className={!smtpConfig.enabled ? 'opacity-40 pointer-events-none' : ''}>
+                        <div className="space-y-3">
+                          {([
+                            { label: 'Service ID', key: 'serviceId', placeholder: 'service_xxxxxxx' },
+                            { label: 'Template ID', key: 'templateId', placeholder: 'template_xxxxxxx' },
+                            { label: 'Public Key', key: 'publicKey', placeholder: 'YOUR_PUBLIC_KEY' },
+                          ] as { label: string; key: string; placeholder: string }[]).map((f) => (
+                            <div key={f.key}>
+                              <Label className="mb-1 block text-sm font-semibold">{f.label}</Label>
+                              <Input
+                                value={(smtpConfig as any)[f.key] || ''}
+                                onChange={(e) => setSmtpConfig((prev: any) => ({ ...prev, [f.key]: e.target.value }))}
+                                placeholder={f.placeholder}
+                                className="h-11 font-mono text-sm"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <Button onClick={saveSmtp} className="w-full h-12 bg-[#FFD600] text-[#121212] font-bold rounded-xl">
+                        Kaydet
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      ))}
     </motion.div>
   );
 }

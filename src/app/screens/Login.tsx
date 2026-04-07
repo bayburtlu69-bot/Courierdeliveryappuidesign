@@ -1,146 +1,131 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { Phone, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { toast } from 'sonner';
+import { courierAuth, generateCode, sendVerificationEmail } from '../utils/auth';
+
+type LoginStep = 'credentials' | 'otp';
 
 export function Login() {
   const navigate = useNavigate();
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<LoginStep>('credentials');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [sentCode, setSentCode] = useState('');
+  const [pendingCourier, setPendingCourier] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (phoneNumber.length >= 10) {
-      setIsLoading(true);
-      // Simulate API call
-      setTimeout(() => {
-        setIsLoading(false);
-        navigate('/otp', { state: { phoneNumber } });
-      }, 1000);
+    if (!email || !password) { toast.error('E-posta ve şifre gereklidir'); return; }
+    setLoading(true);
+
+    const courier = courierAuth.login(email, password);
+    if (!courier) {
+      setLoading(false);
+      toast.error('E-posta veya şifre hatalı, ya da hesabınız henüz onaylanmamış');
+      return;
     }
+
+    // Doğrulama kodu gönder
+    const code = generateCode();
+    setSentCode(code);
+    setPendingCourier(courier);
+    const ok = await sendVerificationEmail(courier.email, code, courier.name);
+    setLoading(false);
+
+    if (ok) {
+      toast.success(`Doğrulama kodu ${courier.email} adresine gönderildi`);
+    } else {
+      toast.info(`Geliştirme modu: Kod konsola basıldı (${code})`);
+    }
+    setStep('otp');
   };
 
-  const formatPhoneNumber = (value: string) => {
-    const cleaned = value.replace(/\D/g, '');
-    setPhoneNumber(cleaned);
+  const handleVerify = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp === sentCode) {
+      courierAuth.setSession(pendingCourier!);
+      toast.success(`Hoş geldin, ${pendingCourier!.name}! 🎉`);
+      navigate('/dashboard');
+    } else {
+      toast.error('Doğrulama kodu hatalı');
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-white flex flex-col">
-      {/* Header */}
       <div className="p-6">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/onboarding')}
-          className="w-10 h-10 rounded-full"
-        >
+        <Button variant="ghost" size="icon" onClick={() => step === 'otp' ? setStep('credentials') : navigate('/onboarding')} className="w-10 h-10 rounded-full">
           <ArrowLeft className="w-5 h-5" />
         </Button>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 px-6 pt-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-            className="w-20 h-20 bg-[#FFD600] rounded-3xl flex items-center justify-center mb-8"
-          >
-            <Phone className="w-10 h-10 text-[#121212]" />
-          </motion.div>
+      <div className="flex-1 px-6 pt-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="w-20 h-20 bg-[#FFD600] rounded-3xl flex items-center justify-center mb-6 shadow-lg">
+            {step === 'otp' ? <Mail className="w-10 h-10 text-[#121212]" /> : <Lock className="w-10 h-10 text-[#121212]" />}
+          </div>
 
-          <h1 className="text-3xl font-bold text-[#121212] mb-3">
-            Telefon Numaranı Gir
-          </h1>
-          <p className="text-gray-600 text-base mb-8">
-            Numaranı doğrulamak için sana bir kod göndereceğiz
-          </p>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Telefon Numarası
-              </label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center">
-                  <span className="text-gray-600 font-medium">+90</span>
-                  <div className="w-px h-6 bg-gray-300 ml-3" />
+          {step === 'credentials' ? (
+            <>
+              <h1 className="text-3xl font-bold text-[#121212] mb-2">Giriş Yap</h1>
+              <p className="text-gray-500 mb-8">E-posta ve şifrenizi girin</p>
+              <form onSubmit={handleLogin} className="space-y-5">
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block">E-posta</label>
+                  <Input type="email" placeholder="ornek@email.com" value={email}
+                    onChange={(e) => setEmail(e.target.value)} className="h-12" required />
                 </div>
-                <Input
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={(e) => formatPhoneNumber(e.target.value)}
-                  placeholder="5XX XXX XX XX"
-                  className="pl-16 h-14 rounded-2xl border-2 border-gray-200 focus:border-[#FFD600] text-lg"
-                  maxLength={10}
-                  autoFocus
-                />
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={phoneNumber.length < 10 || isLoading}
-              className="w-full h-14 bg-[#FFD600] hover:bg-[#FFD600]/90 text-[#121212] font-semibold rounded-2xl text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-transform"
-            >
-              {isLoading ? (
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="w-6 h-6 border-3 border-[#121212] border-t-transparent rounded-full"
-                />
-              ) : (
-                "Devam Et"
-              )}
-            </Button>
-          </form>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Şifre</label>
+                  <div className="relative">
+                    <Input type={showPass ? 'text' : 'password'} placeholder="••••••••"
+                      value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 pr-12" required />
+                    <button type="button" onClick={() => setShowPass(!showPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      {showPass ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                <Button type="submit" disabled={loading}
+                  className="w-full h-14 bg-[#121212] text-white text-lg font-bold rounded-2xl">
+                  {loading ? 'Kontrol ediliyor...' : 'Giriş Yap'}
+                </Button>
+                <p className="text-center text-gray-500 text-sm">
+                  Hesabın yok mu?{' '}
+                  <button type="button" onClick={() => navigate('/apply')} className="text-[#121212] font-bold underline">
+                    Kurye Ol
+                  </button>
+                </p>
+              </form>
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl font-bold text-[#121212] mb-2">Doğrulama Kodu</h1>
+              <p className="text-gray-500 mb-8">
+                <span className="font-semibold text-[#121212]">{email}</span> adresine gönderilen 6 haneli kodu girin
+              </p>
+              <form onSubmit={handleVerify} className="space-y-5">
+                <Input type="text" placeholder="000000" maxLength={6} value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g,''))}
+                  className="h-14 text-center text-2xl font-bold tracking-widest" />
+                <Button type="submit" className="w-full h-14 bg-[#FFD600] text-[#121212] text-lg font-bold rounded-2xl">
+                  Doğrula ve Giriş Yap
+                </Button>
+                <button type="button" onClick={() => { const c = generateCode(); setSentCode(c); sendVerificationEmail(email, c, pendingCourier?.name||''); toast.success('Yeni kod gönderildi'); }}
+                  className="w-full text-center text-sm text-gray-500 underline">
+                  Kodu tekrar gönder
+                </button>
+              </form>
+            </>
+          )}
         </motion.div>
-      </div>
-
-      {/* Footer */}
-      <div className="p-6 space-y-4">
-        <div className="text-center">
-          <p className="text-sm text-gray-600 mb-3">
-            Platformumuza yeni misin?
-          </p>
-          <Button
-            onClick={() => navigate('/apply')}
-            variant="outline"
-            className="w-full h-12 border-2 border-[#FFD600] text-[#121212] font-semibold rounded-xl hover:bg-[#FFD600]/10"
-          >
-            Kurye Olarak Başvur
-          </Button>
-        </div>
-
-        <div className="text-center">
-          <Button
-            onClick={() => navigate('/admin-selector')}
-            variant="ghost"
-            className="text-gray-500 hover:text-[#121212] text-sm"
-          >
-            Admin Paneli →
-          </Button>
-        </div>
-
-        <p className="text-sm text-gray-500 text-center">
-          Devam ederek{' '}
-          <a href="#" className="text-[#121212] font-medium underline">
-            Hizmet Şartlarımızı
-          </a>{' '}
-          ve{' '}
-          <a href="#" className="text-[#121212] font-medium underline">
-            Gizlilik Politikamızı
-          </a>{' '}
-          kabul etmiş olursunuz
-        </p>
       </div>
     </div>
   );

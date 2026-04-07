@@ -53,7 +53,7 @@ export function Profile() {
     return {
       name: 'Kurye Kullanıcı',
       phone: '+90 555 123 4567',
-      email: 'kurye@baymoto.com',
+      email: 'kurye@jetgo.com',
       vehicleType: 'Motosiklet',
       vehicleNumber: '34 ABC 123',
       vehicleBrand: 'Honda',
@@ -513,7 +513,7 @@ export function Profile() {
                           </div>
 
                           <div className="pt-1 border-t border-gray-100">
-                            <p className="text-xs text-gray-400 text-center">Baymoto Kurye v2.0.0</p>
+                            <p className="text-xs text-gray-400 text-center">Jetgo Kurye v2.0.0</p>
                           </div>
                         </div>
                       )}

@@ -19,6 +19,7 @@ import {
 import { Button } from '../components/ui/button';
 import { IncomingOrderPopup } from '../components/IncomingOrderPopup';
 import { useAppTheme } from '../utils/useAppTheme';
+import { courierAuth, orderStore } from '../utils/auth';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -66,22 +67,24 @@ export function Dashboard() {
 
   useEffect(() => {
     localStorage.setItem('isOnline', isOnline.toString());
+    // Gerçek sistem: kurye online durumunu güncelle
+    courierAuth.updateOnlineStatus(isOnline);
   }, [isOnline]);
 
   useEffect(() => {
     if (isOnline) {
+      // Gerçek sistem: yeni siparişleri kontrol et
+      const newOrders = orderStore.getNew();
       const activeOrders = JSON.parse(localStorage.getItem('activeOrders') || '[]');
-      const newOrders = activeOrders.filter((order: any) => order.status === 'new');
+      const legacyNew = activeOrders.filter((order: any) => order.status === 'new');
+      const allNew = [...newOrders.map((o) => ({ ...o, restaurant: o.shopName })), ...legacyNew];
 
-      if (newOrders.length > 0) {
+      if (allNew.length > 0) {
         const timer = setTimeout(() => {
           playNotificationSound();
           if (checkAutoAccept()) {
-            const order = newOrders[0];
-            const updatedOrders = activeOrders.map((o: any) =>
-              o.id === order.id ? { ...o, status: 'accepted' } : o
-            );
-            localStorage.setItem('activeOrders', JSON.stringify(updatedOrders));
+            const order = allNew[0];
+            orderStore.accept(order.id, localStorage.getItem('jetgo_courier_id') || 'demo');
             navigate(`/order/${order.id}`);
           } else {
             setShowIncomingOrder(true);

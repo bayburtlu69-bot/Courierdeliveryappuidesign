@@ -24,12 +24,13 @@ import {
   Trash2,
   TriangleAlert,
   CircleMinus,
+  Search,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { LiveSupportChat } from '../components/LiveSupportChat';
 import { toast } from 'sonner';
 
-type EmpTab = 'overview' | 'applications' | 'support';
+type EmpTab = 'overview' | 'applications' | 'support' | 'couriers';
 
 interface CloseChatOptions {
   ticketId: number;
@@ -68,6 +69,7 @@ export function EmployeeDashboard() {
     { id: 'overview', icon: Home, label: 'Genel Bakış', color: 'text-[#FFD600]' },
     { id: 'applications', icon: FileText, label: 'Başvurular', color: 'text-purple-400', badge: pendingApplications.length },
     { id: 'support', icon: MessageSquare, label: 'Canlı Destek', color: 'text-blue-400', badge: supportTickets.length },
+    { id: 'couriers', icon: User, label: 'Kuryeler', color: 'text-green-400' },
   ];
 
   const handleLogout = () => {
@@ -91,8 +93,10 @@ export function EmployeeDashboard() {
     const updated = applications.map((a: any) => a.id === id ? { ...a, status: 'approved' } : a);
     setApplications(updated);
     localStorage.setItem('courierApplications', JSON.stringify(updated));
-    logActivity('Başvuru Onaylandı', `${app?.fullName} başvurusu onaylandı`, 'success');
-    toast.success('Başvuru onaylandı!');
+    // Gerçek sistem: kurye hesabı oluştur
+    import('../utils/auth').then(({ courierAuth }) => courierAuth.approveApplication(id));
+    logActivity('Başvuru Onaylandı', `${app?.fullName} başvurusu onaylandı ve kurye hesabı oluşturuldu`, 'success');
+    toast.success(`${app?.fullName} onaylandı! Kurye hesabı aktif edildi. 🎉`);
   };
 
   const handleRejectWithReason = (id: number, reason: string) => {
@@ -116,19 +120,19 @@ export function EmployeeDashboard() {
     // Send farewell message (in a real app, this would go to the courier's chat)
     const farewellMsg = {
       id: Date.now().toString(),
-      text: '🌟 Baymoto Destek ekibinden mesaj: Sorununuz çözüldü. Kendinize çok iyi bakın, iyi çalışmalar dileriz! Herhangi bir konuda tekrar yardımcı olmaktan memnuniyet duyarız. 🙏',
+      text: '🌟 Jetgo Destek ekibinden mesaj: Sorununuz çözüldü. Kendinize çok iyi bakın, iyi çalışmalar dileriz! Herhangi bir konuda tekrar yardımcı olmaktan memnuniyet duyarız. 🙏',
       sender: 'support',
       time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
       farewell: true,
     };
 
     // Save farewell to courier's chat storage
-    const chatKey = `baymoto_support_chat`;
+    const chatKey = `jetgo_support_chat`;
     const existingMsgs = JSON.parse(localStorage.getItem(chatKey) || '[]');
     existingMsgs.push(farewellMsg);
     localStorage.setItem(chatKey, JSON.stringify(existingMsgs));
     // Clear courier's chat state so it doesn't auto-resume
-    localStorage.removeItem('baymoto_support_state');
+    localStorage.removeItem('jetgo_support_state');
 
     logActivity('Sohbet Silindi', `Destek Talebi #${ticketId} komple silindi ve kurye bilgilendirildi`, 'info');
     setSelectedTicket(null);
@@ -163,7 +167,7 @@ export function EmployeeDashboard() {
               <UserCog className="w-8 h-8 text-[#121212]" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-[#FFD600]">Baymoto</h1>
+              <h1 className="text-xl font-bold text-[#FFD600]">Jetgo</h1>
               <p className="text-xs text-white/50">Destek Paneli</p>
             </div>
           </div>
@@ -177,7 +181,7 @@ export function EmployeeDashboard() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-bold text-white truncate">
-                {localStorage.getItem('adminEmail') || 'destek@baymoto.com'}
+                {localStorage.getItem('adminEmail') || 'destek@jetgo.com'}
               </p>
               <p className="text-xs text-[#FFD600]">Destek Çalışanı</p>
             </div>
@@ -286,6 +290,9 @@ export function EmployeeDashboard() {
                 showMaxTickets={showMaxTickets}
                 setShowMaxTickets={setShowMaxTickets}
               />
+            )}
+            {activeTab === 'couriers' && (
+              <EmpCouriersContent key="couriers" />
             )}
           </AnimatePresence>
         </div>
@@ -451,6 +458,168 @@ export function EmployeeDashboard() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// ─── KURYELER (ÇALIŞAN) ───────────────────────────────────────────
+function EmpCouriersContent() {
+  const [search, setSearch] = useState('');
+  const [reassignModal, setReassignModal] = useState<any>(null);
+  const [reassignTarget, setReassignTarget] = useState<number | null>(null);
+
+  const couriers = [
+    { id: 1, courierId: 'KRY-001', name: 'Ahmet Yılmaz', phone: '0555 111 1111', vehicle: 'Motosiklet', rating: 4.9, deliveries: 312, status: 'delivering', activeOrder: '#SIP-1234', city: 'İstanbul' },
+    { id: 2, courierId: 'KRY-002', name: 'Fatma Demir',  phone: '0555 222 2222', vehicle: 'Bisiklet',   rating: 4.7, deliveries: 187, status: 'offline',    activeOrder: null,       city: 'Ankara' },
+    { id: 3, courierId: 'KRY-003', name: 'Mehmet Kaya',  phone: '0555 333 3333', vehicle: 'Motosiklet', rating: 4.8, deliveries: 245, status: 'delivering', activeOrder: '#SIP-1235', city: 'İzmir' },
+    { id: 4, courierId: 'KRY-004', name: 'Ayşe Öz',      phone: '0555 444 4444', vehicle: 'Motosiklet', rating: 4.6, deliveries: 198, status: 'online',     activeOrder: null,       city: 'Bursa' },
+    { id: 5, courierId: 'KRY-005', name: 'Can Bak',      phone: '0555 555 5555', vehicle: 'Bisiklet',   rating: 4.5, deliveries: 120, status: 'offline',    activeOrder: null,       city: 'Antalya' },
+    { id: 6, courierId: 'KRY-006', name: 'Zeynep Ak',    phone: '0555 666 6666', vehicle: 'Motosiklet', rating: 4.4, deliveries: 88,  status: 'online',     activeOrder: null,       city: 'Adana' },
+    { id: 7, courierId: 'KRY-007', name: 'Burak Ar',     phone: '0555 777 7777', vehicle: 'Bisiklet',   rating: 4.3, deliveries: 55,  status: 'offline',    activeOrder: null,       city: 'Trabzon' },
+  ];
+
+  const filtered = couriers.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.courierId.toLowerCase().includes(search.toLowerCase()) ||
+    c.phone.includes(search)
+  );
+
+  const availableCouriers = couriers.filter((c) => c.status === 'online' && !c.activeOrder);
+
+  const handleReassign = () => {
+    if (!reassignTarget) { toast.error('Lütfen bir kurye seçin'); return; }
+    const to = couriers.find((c) => c.id === reassignTarget);
+    toast.success(`${reassignModal.activeOrder} siparişi ${to?.name}'e atandı! 🎯`);
+    setReassignModal(null);
+    setReassignTarget(null);
+  };
+
+  const statusColor = (s: string) =>
+    s === 'delivering' ? 'text-blue-600 bg-blue-50' :
+    s === 'online'     ? 'text-green-600 bg-green-50' : 'text-gray-500 bg-gray-100';
+  const statusLabel = (s: string) =>
+    s === 'delivering' ? '🚴 Teslimatta' : s === 'online' ? '✅ Müsait' : '⭕ Çevrimdışı';
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="ID, isim veya telefon ara..."
+            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FFD600]"
+          />
+        </div>
+        <div className="bg-blue-50 border border-blue-200 px-3 py-2 rounded-xl whitespace-nowrap text-sm font-semibold text-blue-700">
+          {couriers.filter((c) => c.status === 'delivering').length} teslimatta
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {filtered.map((courier, i) => (
+          <motion.div
+            key={courier.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.04 }}
+            className="bg-white rounded-2xl p-4 shadow-md border border-gray-100"
+          >
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                courier.status === 'delivering' ? 'bg-blue-100' :
+                courier.status === 'online' ? 'bg-green-100' : 'bg-gray-100'
+              }`}>
+                <User className={`w-6 h-6 ${
+                  courier.status === 'delivering' ? 'text-blue-600' :
+                  courier.status === 'online' ? 'text-green-600' : 'text-gray-400'
+                }`} />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-bold text-[#121212]">{courier.name}</h4>
+                  <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{courier.courierId}</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-0.5">{courier.vehicle} · {courier.city} · ⭐{courier.rating}</p>
+                {courier.activeOrder && (
+                  <p className="text-xs text-blue-600 font-semibold mt-0.5">📦 {courier.activeOrder}</p>
+                )}
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <span className={`text-xs font-bold px-2 py-1 rounded-full ${statusColor(courier.status)}`}>
+                  {statusLabel(courier.status)}
+                </span>
+                {courier.activeOrder && (
+                  <button
+                    onClick={() => { setReassignModal(courier); setReassignTarget(null); }}
+                    className="text-xs bg-[#FFD600] text-[#121212] font-bold px-3 py-1 rounded-lg hover:bg-yellow-400 transition-colors"
+                  >
+                    Yeniden Ata
+                  </button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        ))}
+
+        {filtered.length === 0 && (
+          <div className="text-center py-12 text-gray-400">
+            <User className="w-12 h-12 mx-auto mb-2 opacity-30" />
+            <p>Kurye bulunamadı</p>
+          </div>
+        )}
+      </div>
+
+      {/* Reassign Modal */}
+      <AnimatePresence>
+        {reassignModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6"
+            onClick={() => setReassignModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.85, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.85, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl"
+            >
+              <h3 className="font-bold text-lg text-[#121212] mb-1">Siparişi Yeniden Ata</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                <span className="font-semibold text-blue-600">{reassignModal.activeOrder}</span> — en yakın müsait kuryeye aktar
+              </p>
+              <div className="space-y-2 max-h-52 overflow-y-auto mb-4">
+                {availableCouriers.filter((c) => c.id !== reassignModal.id).map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setReassignTarget(c.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                      reassignTarget === c.id ? 'border-[#FFD600] bg-yellow-50' : 'border-gray-100 hover:border-gray-200'
+                    }`}
+                  >
+                    <div className="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center">
+                      <User className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <p className="font-semibold text-sm text-[#121212]">{c.name}</p>
+                      <p className="text-xs text-gray-400">{c.city} · {c.courierId}</p>
+                    </div>
+                    <span className="text-xs text-green-600 font-bold">Müsait</span>
+                    {reassignTarget === c.id && <span className="text-[#FFD600] font-bold ml-1">✓</span>}
+                  </button>
+                ))}
+                {availableCouriers.filter((c) => c.id !== reassignModal.id).length === 0 && (
+                  <p className="text-center text-sm text-gray-400 py-6">Müsait kurye bulunamadı</p>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setReassignModal(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold">İptal</button>
+                <button onClick={handleReassign} className="flex-1 py-2.5 rounded-xl bg-[#FFD600] text-[#121212] text-sm font-bold">Ata</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
@@ -632,14 +801,24 @@ function ApplicationsContent({ applications, onApprove, onRejectRequest, viewing
           <div className="border-t border-gray-100 pt-4">
             <h4 className="font-bold text-[#121212] mb-3">Belgeler</h4>
             <div className="grid grid-cols-4 gap-3">
-              {['Ehliyet', 'Kimlik', 'Araç Ruhsatı', 'Araç Fotoğrafı'].map((doc) => (
+              {[
+                { label: 'Ehliyet', field: 'driverLicenseImage' },
+                { label: 'Kimlik', field: 'idPhotoImage' },
+                { label: 'Araç Ruhsatı', field: 'vehicleRegistrationImage' },
+                { label: 'Araç Fotoğrafı', field: 'vehiclePhotoImage' },
+              ].map(({ label, field }) => (
                 <button
-                  key={doc}
-                  onClick={() => setViewingDocument({ type: doc, url: '#' })}
-                  className="bg-gradient-to-br from-[#FFD600] to-[#FFC107] rounded-xl p-3 text-center hover:shadow-lg transition-all"
+                  key={label}
+                  onClick={() => setViewingDocument({ type: label, url: app[field] || null })}
+                  className={`rounded-xl p-3 text-center hover:shadow-lg transition-all border-2 ${
+                    app[field] ? 'bg-gradient-to-br from-[#FFD600] to-[#FFC107] border-yellow-300' : 'bg-gray-100 border-gray-200 opacity-50'
+                  }`}
                 >
-                  <Eye className="w-6 h-6 text-[#121212] mx-auto mb-1" />
-                  <p className="text-xs font-bold text-[#121212]">{doc}</p>
+                  {app[field]
+                    ? <img src={app[field]} alt={label} className="w-full h-12 object-cover rounded-lg mb-1" />
+                    : <Eye className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+                  }
+                  <p className="text-xs font-bold text-[#121212]">{label}</p>
                 </button>
               ))}
             </div>
@@ -655,28 +834,33 @@ function ApplicationsContent({ applications, onApprove, onRejectRequest, viewing
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setViewingDocument(null)}
-            className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8"
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
           >
             <motion.div
-              initial={{ scale: 0.8 }}
+              initial={{ scale: 0.85 }}
               animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
+              exit={{ scale: 0.85 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl p-8 max-w-3xl w-full shadow-2xl"
+              className="bg-white rounded-3xl overflow-hidden max-w-2xl w-full shadow-2xl"
             >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-[#121212]">{viewingDocument.type}</h3>
-                <Button onClick={() => setViewingDocument(null)} variant="ghost" size="icon" className="w-10 h-10 rounded-full">
+              <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                <h3 className="text-lg font-bold text-[#121212]">{viewingDocument.type}</h3>
+                <Button onClick={() => setViewingDocument(null)} variant="ghost" size="icon" className="w-9 h-9 rounded-full">
                   <X className="w-5 h-5" />
                 </Button>
               </div>
-              <div className="bg-gray-100 rounded-2xl p-12 flex items-center justify-center min-h-64">
-                <div className="text-center">
-                  <FileText className="w-24 h-24 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 font-semibold">{viewingDocument.type} Belgesi</p>
-                  <p className="text-gray-400 text-sm mt-2">Gerçek uygulamada belge görseli burada görüntülenecek</p>
+              {viewingDocument.url ? (
+                <img
+                  src={viewingDocument.url}
+                  alt={viewingDocument.type}
+                  className="w-full max-h-[70vh] object-contain bg-gray-50"
+                />
+              ) : (
+                <div className="p-16 flex flex-col items-center justify-center text-center bg-gray-50">
+                  <FileText className="w-20 h-20 text-gray-200 mb-4" />
+                  <p className="text-gray-400 font-semibold">Görsel yüklenmemiş</p>
                 </div>
-              </div>
+              )}
             </motion.div>
           </motion.div>
         )}
@@ -689,6 +873,16 @@ function ApplicationsContent({ applications, onApprove, onRejectRequest, viewing
 function SupportContent({ tickets, selectedTicket, setSelectedTicket, onCloseChatRequest, showMaxTickets, setShowMaxTickets }: any) {
   const visibleTickets = tickets.slice(0, showMaxTickets);
   const hasMore = tickets.length > showMaxTickets;
+
+  // Kurye sohbet silme bildirimleri
+  const [chatNotifs, setChatNotifs] = useState<any[]>(() =>
+    JSON.parse(localStorage.getItem('empChatNotifications') || '[]')
+  );
+  const dismissNotif = (id: number) => {
+    const updated = chatNotifs.filter((n) => n.id !== id);
+    setChatNotifs(updated);
+    localStorage.setItem('empChatNotifications', JSON.stringify(updated));
+  };
 
   return (
     <motion.div
@@ -704,6 +898,19 @@ function SupportContent({ tickets, selectedTicket, setSelectedTicket, onCloseCha
           Destek Talepleri ({tickets.length})
           <span className="ml-2 text-xs text-gray-400 font-normal">Yeniden eskiye</span>
         </h3>
+
+        {/* Chat kapatma bildirimleri */}
+        {chatNotifs.length > 0 && (
+          <div className="mb-3 space-y-2 flex-shrink-0">
+            {chatNotifs.map((n: any) => (
+              <div key={n.id} className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-3 py-2">
+                <span className="text-sm flex-1 text-orange-700">🔔 {n.text}</span>
+                <button onClick={() => dismissNotif(n.id)} className="text-orange-400 hover:text-orange-600 text-xs font-bold">✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto space-y-2">
           {visibleTickets.map((ticket: any, index: number) => (
             <motion.button

@@ -6,6 +6,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
+import { adminAuth } from '../utils/auth';
 
 export function EmployeeLogin() {
   const navigate = useNavigate();
@@ -14,12 +15,12 @@ export function EmployeeLogin() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (email && password) {
-      localStorage.setItem('adminRole', 'employee');
-      localStorage.setItem('adminEmail', email);
+    const ok = adminAuth.login(email, password, 'employee');
+    if (ok) {
       toast.success('Hoş geldiniz, Destek Çalışanı!');
       navigate('/employee/dashboard');
+    } else {
+      toast.error('E-posta veya şifre hatalı!');
     }
   };
 
@@ -34,7 +35,7 @@ export function EmployeeLogin() {
           <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
             <UserCog className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-[#121212] mb-2">Baymoto</h1>
+          <h1 className="text-4xl font-bold text-[#121212] mb-2">Jetgo</h1>
           <h2 className="text-xl font-bold text-gray-700 mb-1">Destek Çalışanı Girişi</h2>
           <p className="text-gray-600">Başvuruları inceleyin ve destek sağlayın</p>
         </div>
@@ -48,7 +49,7 @@ export function EmployeeLogin() {
             <Input
               id="email"
               type="email"
-              placeholder="destek@baymoto.com"
+              placeholder="destek@jetgo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="h-12"

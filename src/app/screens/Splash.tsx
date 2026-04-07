@@ -48,7 +48,7 @@ export function Splash() {
           transition={{ delay: 0.3, duration: 0.5 }}
           className="text-5xl font-bold text-[#FFD600] mb-2"
         >
-          Baymoto
+          Jetgo
         </motion.h1>
 
         <motion.p

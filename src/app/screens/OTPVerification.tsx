@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router';
 import { motion } from 'motion/react';
 import { Shield, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import { courierAuth, generateCode, sendVerificationEmail } from '../utils/auth';
 
 export function OTPVerification() {
   const navigate = useNavigate();
@@ -56,18 +57,30 @@ export function OTPVerification() {
     setIsLoading(true);
     setError('');
 
-    // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      // Mock verification (accept any 6-digit code)
       if (code.length === 6) {
-        setIsSuccess(true);
-        setTimeout(() => {
-          localStorage.setItem('isLoggedIn', 'true');
-          navigate('/dashboard');
-        }, 1500);
+        // Gerçek auth: telefon numarasıyla kurye kaydı kontrol et
+        // Gerçek auth: telefon numarasıyla kurye kaydı kontrol et
+        const courier = courierAuth.login(phoneNumber, '');
+
+        if (courier) {
+          // Kayıtlı ve onaylı kurye
+          courierAuth.setSession(courier);
+          setIsSuccess(true);
+          toast.success(`Hoş geldin, ${courier.name}! 🎉`);
+          setTimeout(() => navigate('/dashboard'), 1200);
+        } else {
+          // Kayıtsız veya beklemede → başvuruya yönlendir
+          setIsSuccess(true);
+          localStorage.setItem('pendingPhone', phoneNumber);
+          setTimeout(() => {
+            toast.info('Hesabınız bulunamadı. Kurye başvurusu yapın.');
+            navigate('/apply');
+          }, 1200);
+        }
       } else {
-        setError('Invalid verification code');
+        setError('Geçersiz doğrulama kodu');
         setOtp(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       }

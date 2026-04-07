@@ -21,6 +21,8 @@ import { toast } from 'sonner';
 interface FormData {
   fullName: string;
   email: string;
+  password: string;
+  confirmPassword: string;
   phone: string;
   licenseNumber: string;
   licensePlate: string;
@@ -43,6 +45,8 @@ export function CourierApplication() {
   const [formData, setFormData] = useState<FormData>({
     fullName: '',
     email: '',
+    password: '',
+    confirmPassword: '',
     phone: '',
     licenseNumber: '',
     licensePlate: '',
@@ -64,44 +68,67 @@ export function CourierApplication() {
   };
 
   const handleNext = () => {
-    if (step < 3) {
+    if (step < 4) {
       setStep(step + 1);
     } else {
       handleSubmit();
     }
   };
 
-  const handleSubmit = () => {
-    // Mock submission - in real app this would send to backend
+  // File → base64 converter
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+
+  const handleSubmit = async () => {
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Şifreler eşleşmiyor!'); return;
+    }
+    if (formData.password.length < 6) {
+      toast.error('Şifre en az 6 karakter olmalıdır'); return;
+    }
+
+    // Görselleri base64'e çevir (çalışan panelinde görüntülenecek)
+    const [dlImg, vrImg, vpImg, idImg] = await Promise.all([
+      formData.driverLicenseImage ? fileToBase64(formData.driverLicenseImage) : Promise.resolve(null),
+      formData.vehicleRegistrationImage ? fileToBase64(formData.vehicleRegistrationImage) : Promise.resolve(null),
+      formData.vehiclePhotoImage ? fileToBase64(formData.vehiclePhotoImage) : Promise.resolve(null),
+      formData.idPhotoImage ? fileToBase64(formData.idPhotoImage) : Promise.resolve(null),
+    ]);
+
     const applications = JSON.parse(localStorage.getItem('courierApplications') || '[]');
     applications.push({
       id: Date.now(),
-      ...formData,
+      fullName: formData.fullName,
+      email: formData.email,
+      password: formData.password,
+      phone: formData.phone,
+      licenseNumber: formData.licenseNumber,
+      licensePlate: formData.licensePlate,
+      vehicleType: formData.vehicleType,
+      registration: formData.registration,
+      city: formData.city,
       status: 'pending',
       submittedAt: new Date().toISOString(),
-      // Convert files to mock URLs for display
-      driverLicenseImage: formData.driverLicenseImage?.name || null,
-      vehicleRegistrationImage: formData.vehicleRegistrationImage?.name || null,
-      vehiclePhotoImage: formData.vehiclePhotoImage?.name || null,
-      idPhotoImage: formData.idPhotoImage?.name || null,
+      driverLicenseImage: dlImg,
+      vehicleRegistrationImage: vrImg,
+      vehiclePhotoImage: vpImg,
+      idPhotoImage: idImg,
     });
     localStorage.setItem('courierApplications', JSON.stringify(applications));
-    
-    toast.success('✅ Başvurunuz başarıyla gönderildi! İncelendikten sonra size dönüş yapılacaktır.');
-    setTimeout(() => navigate('/login'), 2000);
+
+    toast.success('✅ Başvurunuz gönderildi! Onaylandıktan sonra e-postanızdaki bilgilerle giriş yapabilirsiniz.');
+    setTimeout(() => navigate('/login'), 2500);
   };
 
   const canProceed = () => {
-    if (step === 1) {
-      return formData.fullName && formData.email && formData.phone && formData.city;
-    }
-    if (step === 2) {
-      return formData.licenseNumber && formData.licensePlate && formData.vehicleType && formData.registration;
-    }
-    if (step === 3) {
-      return formData.driverLicenseImage && formData.vehicleRegistrationImage && 
-             formData.vehiclePhotoImage && formData.idPhotoImage;
-    }
+    if (step === 1) return !!(formData.fullName && formData.email && formData.phone && formData.city);
+    if (step === 2) return !!(formData.licenseNumber && formData.licensePlate && formData.vehicleType && formData.registration);
+    if (step === 3) return !!(formData.driverLicenseImage && formData.vehicleRegistrationImage && formData.vehiclePhotoImage && formData.idPhotoImage);
+    if (step === 4) return !!(formData.password && formData.confirmPassword && formData.password === formData.confirmPassword && formData.password.length >= 6);
     return false;
   };
 
@@ -119,7 +146,7 @@ export function CourierApplication() {
           
           {/* Progress bar */}
           <div className="flex gap-2 mt-4">
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
                 className={`h-1 flex-1 rounded-full transition-all ${
@@ -365,6 +392,40 @@ export function CourierApplication() {
         )}
       </div>
 
+      {/* Step 4 — Şifre */}
+      {step === 4 && (
+        <div className="max-w-2xl mx-auto px-6 pb-4">
+          <motion.div key="step4" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
+            <h2 className="text-xl font-bold text-[#121212] mb-1">Hesap Şifreni Belirle</h2>
+            <p className="text-gray-500 text-sm mb-4">Başvurun onaylandıktan sonra bu şifre ile giriş yapacaksın</p>
+            <div>
+              <label className="text-sm font-semibold text-gray-700 mb-2 block">Şifre (en az 6 karakter)</label>
+              <input type="password" placeholder="••••••••"
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                className="w-full h-12 border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFD600]"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-700 mb-2 block">Şifre Tekrar</label>
+              <input type="password" placeholder="••••••••"
+                value={formData.confirmPassword}
+                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                className="w-full h-12 border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFD600]"
+              />
+              {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                <p className="text-red-500 text-xs mt-1">Şifreler eşleşmiyor</p>
+              )}
+            </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+              <p className="text-xs text-yellow-800 font-semibold">📧 Giriş bilgilerin:</p>
+              <p className="text-xs text-yellow-700 mt-1">E-posta: <strong>{formData.email}</strong></p>
+              <p className="text-xs text-yellow-600 mt-0.5">Başvurun onaylandıktan sonra bu bilgilerle uygulamaya giriş yapabilirsin.</p>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
         <div className="max-w-2xl mx-auto flex gap-3">
@@ -382,7 +443,7 @@ export function CourierApplication() {
             disabled={!canProceed()}
             className="flex-1 h-12 bg-[#FFD600] hover:bg-[#FFD600]/90 text-[#121212] font-semibold rounded-xl disabled:opacity-50"
           >
-            {step === 3 ? (
+            {step === 4 ? (
               <>
                 <CheckCircle className="mr-2 w-5 h-5" />
                 Başvuruyu Gönder

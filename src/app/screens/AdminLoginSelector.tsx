@@ -46,7 +46,7 @@ export function AdminLoginSelector() {
           className="text-center mb-12"
         >
           <div className="mb-6">
-            <h1 className="text-6xl font-bold text-[#121212] mb-3">Baymoto</h1>
+            <h1 className="text-6xl font-bold text-[#121212] mb-3">Jetgo</h1>
             <div className="h-1 w-32 bg-[#FFD600] mx-auto rounded-full" />
           </div>
           <h2 className="text-3xl font-bold text-[#121212] mb-2">Yönetim Portalı</h2>

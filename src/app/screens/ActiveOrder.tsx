@@ -16,6 +16,7 @@ import {
   Clock,
   Package,
   CheckCircle,
+  MessageCircle,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { MockMap } from '../components/MockMap';
@@ -257,7 +258,25 @@ export function ActiveOrder() {
   };
 
   const handleNavigateToLocation = () => {
-    setShowMap(true);
+    // Gerçek Google Maps navigasyonu
+    const destination = encodeURIComponent(targetAddress);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          const url = `https://www.google.com/maps/dir/?api=1&origin=${latitude},${longitude}&destination=${destination}&travelmode=driving`;
+          window.open(url, '_blank');
+        },
+        () => {
+          // Konum alınamazsa sadece hedefle aç
+          const url = `https://www.google.com/maps/search/?api=1&query=${destination}`;
+          window.open(url, '_blank');
+        }
+      );
+    } else {
+      const url = `https://www.google.com/maps/search/?api=1&query=${destination}`;
+      window.open(url, '_blank');
+    }
   };
 
   const targetAddress = currentStep === 'go-to-restaurant' || currentStep === 'pickup'
@@ -297,50 +316,7 @@ export function ActiveOrder() {
     }
   };
 
-  if (showMap) {
-    return (
-      <div className="fixed inset-0 bg-white flex flex-col">
-        <div className="bg-[#121212] text-white p-4 shadow-lg z-10">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowMap(false)}
-              className="text-[#FFD600] hover:text-[#FFD600]/80"
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </Button>
-            <div className="text-center flex-1">
-              <p className="font-bold">
-                {currentStep === 'deliver' ? 'Müşteri Adresine' : 'Mağazaya'} Navigasyon
-              </p>
-              <p className="text-xs text-gray-400 truncate">{targetAddress}</p>
-            </div>
-            <div className="w-10" />
-          </div>
-        </div>
-
-        <div className="flex-1">
-          <MockMap
-            restaurantName={order.restaurant || order.shopName}
-            restaurantAddress={order.restaurantAddress || order.pickupAddress}
-            customerName={order.customerName}
-            customerAddress={order.customerAddress || order.deliveryAddress}
-            distance={order.distance}
-          />
-        </div>
-
-        <div className="bg-white p-4 border-t border-gray-200">
-          <Button
-            onClick={() => setShowMap(false)}
-            className="w-full h-14 bg-[#FFD600] hover:bg-[#FFD600]/90 text-[#121212] font-bold rounded-xl"
-          >
-            Sipariş Ekranına Dön
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  if (false) { /* showMap removed — using real Google Maps */ }
 
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
@@ -678,6 +654,15 @@ export function ActiveOrder() {
           <p className="text-center text-xs text-gray-500 mt-3">
             Butonu {holdProgress > 0 ? `%${Math.floor(holdProgress)}` : 'basılı tutarak'} onaylayın
           </p>
+
+          {/* Canlı Destek */}
+          <button
+            onClick={() => navigate('/support')}
+            className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-gray-200 bg-white hover:border-[#FFD600] hover:bg-yellow-50 transition-all"
+          >
+            <MessageCircle className="w-5 h-5 text-gray-500" />
+            <span className="text-sm font-semibold text-gray-600">Canlı Destek</span>
+          </button>
         </div>
       </div>
 
