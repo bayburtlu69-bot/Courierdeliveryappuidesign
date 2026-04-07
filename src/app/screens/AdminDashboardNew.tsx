@@ -1712,6 +1712,11 @@ function SettingsTab() {
                     </div>
                   )}
                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      ))}
     </motion.div>
   );
 }
